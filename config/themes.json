@@ -1,0 +1,28 @@
+{
+  "themes": [
+    {
+      "id": "default",
+      "name": "Default",
+      "primaryColor": "#4A90E2",
+      "secondaryColor": "#50E3C2",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333"
+    },
+    {
+      "id": "night",
+      "name": "Night Mode",
+      "primaryColor": "#6B8E23",
+      "secondaryColor": "#98FB98",
+      "backgroundColor": "#1A1A1A",
+      "textColor": "#FFFFFF"
+    },
+    {
+      "id": "sunset",
+      "name": "Sunset",
+      "primaryColor": "#FF7F50",
+      "secondaryColor": "#FFD700",
+      "backgroundColor": "#FFF5EE",
+      "textColor": "#4A4A4A"
+    }
+  ]
+} 
