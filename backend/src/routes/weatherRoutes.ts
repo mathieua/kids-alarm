@@ -1,27 +1,18 @@
-import express from 'express';
-import axios from 'axios';
-import { WeatherData } from '../../shared/types';
+import { Router } from 'express';
+import { WeatherService } from '../services/weatherService';
 
-const router = express.Router();
+const router = Router();
+const weatherService = WeatherService.getInstance();
 
-// Get current weather
 router.get('/', async (req, res) => {
   try {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-    const city = process.env.DEFAULT_CITY || 'London';
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-
-    const response = await axios.get(url);
-    const weatherData: WeatherData = {
-      temperature: Math.round(response.data.main.temp),
-      condition: response.data.weather[0].main,
-      icon: response.data.weather[0].icon,
-      location: response.data.name,
-    };
-
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+    const lon = req.query.lon ? parseFloat(req.query.lon as string) : undefined;
+    
+    const weatherData = await weatherService.getWeather(lat, lon);
     res.json(weatherData);
   } catch (error) {
-    console.error('Error fetching weather:', error);
+    console.error('Error in weather route:', error);
     res.status(500).json({ error: 'Failed to fetch weather data' });
   }
 });

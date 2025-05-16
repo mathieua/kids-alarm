@@ -3,18 +3,27 @@
     {
       "id": "1",
       "time": "07:00",
-      "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
       "enabled": true,
-      "sound": "morning_song.mp3",
+      "sound": "default",
       "label": "School Day"
     },
     {
       "id": "2",
-      "time": "08:00",
-      "days": ["saturday", "sunday"],
+      "time": "09:00",
+      "days": [
+        "Saturday",
+        "Sunday"
+      ],
       "enabled": true,
-      "sound": "weekend_song.mp3",
+      "sound": "default",
       "label": "Weekend"
     }
   ]
-} 
+}

@@ -1,7 +1,7 @@
 import express, { RequestHandler } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { Theme } from 'shared/types';
+import type { Theme } from 'shared/types';
 
 const router = express.Router();
 const configPath = path.join(__dirname, '../../../config/themes.json');

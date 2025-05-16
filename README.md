@@ -1,90 +1,120 @@
-# Kids Alarm Clock
+# Kids Alarm
 
-A touchscreen-based alarm clock application designed for children, running on Raspberry Pi with a 7" touchscreen display.
-
-## Features
-
-- Current time and next alarm display
-- Lullaby mode with timer
-- Theme customization
-- Music player with local MP3 support
-- Weather information
-- Important dates display (birthdays, etc.)
+A music player application for kids, featuring playlists and easy controls.
 
 ## Prerequisites
 
-- Raspberry Pi (tested on Pi 4)
-- 7" touchscreen display
-- Node.js (v16 or higher)
-- npm or yarn
+### Backend Requirements
 
-## Project Structure
+- Node.js (v14 or higher)
+- MPV media player (required for audio playback)
 
-```
-/project-root
-/frontend         → React app
-/backend          → Express server
-/media            → MP3 files
-/config           → Configuration files
-/shared           → Shared types/interfaces
+#### Installing MPV
+
+**macOS:**
+```bash
+brew install mpv
 ```
 
-## Setup Instructions
+**Linux/Raspberry Pi:**
+```bash
+sudo apt-get update
+sudo apt-get install mpv
+```
 
-### Backend Setup
+**Windows:**
+Download from [mpv.io](https://mpv.io/installation/)
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+## Installation
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file with the following variables:
-   ```
-   PORT=3001
-   OPENWEATHER_API_KEY=your_api_key_here
-   ```
-
-4. Start the backend server:
-   ```bash
-   npm run dev
-   ```
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd kids-alarm
+```
 
 2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+# Install backend dependencies
+cd backend
+npm install
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+# Install frontend dependencies
+cd ../frontend
+npm install
+```
 
-## Configuration Files
+## Running the Application
 
-The application uses several JSON configuration files located in the `/config` directory:
+1. Start the backend server:
+```bash
+cd backend
+npm run dev
+```
 
-- `alarms.json`: Alarm settings and schedules
-- `themes.json`: UI theme configurations
-- `dates.json`: Important dates and events
+2. Start the frontend development server:
+```bash
+cd frontend
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`
+
+## Features
+
+- **Playlist Management**
+  - Create and manage playlists
+  - Add songs to playlists
+  - View playlist contents
+
+- **Audio Playback**
+  - Play/pause/resume audio
+  - Volume control
+  - Stop playback
+  - Real-time volume adjustment without interrupting playback
+
+## API Endpoints
+
+### Audio Control
+
+- `POST /api/audio/play` - Start playback
+  ```json
+  {
+    "filePath": "path/to/song.mp3",
+    "volume": 80
+  }
+  ```
+
+- `POST /api/audio/pause` - Pause playback
+- `POST /api/audio/resume` - Resume playback
+- `POST /api/audio/stop` - Stop playback
+- `POST /api/audio/volume` - Set volume (0-100)
+  ```json
+  {
+    "volume": 80
+  }
+  ```
+- `GET /api/audio/status` - Get playback status
 
 ## Development
 
-- Frontend runs on port 3000
-- Backend runs on port 3001
-- API documentation available at `/api-docs` when running the backend
+### Project Structure
+
+```
+kids-alarm/
+├── backend/           # Node.js backend
+│   ├── src/
+│   │   ├── routes/   # API routes
+│   │   └── services/ # Business logic
+│   └── package.json
+├── frontend/         # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   └── types/
+│   └── package.json
+└── media/           # Audio files
+```
 
 ## License
 
-MIT 
+[Your License] 

@@ -34,4 +34,7 @@ yarn-error.log*
 *.swo
 
 # Vite
-.vite/ 
+.vite/
+
+# Media files
+media/*

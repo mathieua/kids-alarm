@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import type { LullabySettings, MusicFile } from "shared/types";
 import axios from 'axios';
+import MusicPlayer from './MusicPlayer';
 
 const LullabyControls = () => {
   const [settings, setSettings] = useState<LullabySettings>({
@@ -23,6 +24,24 @@ const LullabyControls = () => {
   });
   const [musicFiles, setMusicFiles] = useState<MusicFile[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedMusicFile, setSelectedMusicFile] = useState<MusicFile | null>(null);
+
+  useEffect(() => {
+    const fetchMusicFiles = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/api/lullaby/music');
+        setMusicFiles(response.data.files);
+        if (response.data.files.length > 0) {
+          setSelectedMusicFile(response.data.files[0]);
+          setSettings(prev => ({ ...prev, selectedMusic: response.data.files[0].id }));
+        }
+      } catch (error) {
+        console.error('Error fetching music files:', error);
+      }
+    };
+
+    fetchMusicFiles();
+  }, []);
 
   const handleStartLullaby = async () => {
     try {
@@ -42,6 +61,14 @@ const LullabyControls = () => {
     }
   };
 
+  const handleMusicChange = (musicId: string) => {
+    const musicFile = musicFiles.find(file => file.id === musicId);
+    if (musicFile) {
+      setSelectedMusicFile(musicFile);
+      setSettings(prev => ({ ...prev, selectedMusic: musicId }));
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -56,13 +83,21 @@ const LullabyControls = () => {
         Lullaby Mode
       </Typography>
 
+      {selectedMusicFile && (
+        <MusicPlayer
+          musicFile={selectedMusicFile}
+          volume={settings.volume}
+          onVolumeChange={(volume) => setSettings(prev => ({ ...prev, volume }))}
+          isPlaying={isPlaying}
+          onPlayPause={isPlaying ? handleStopLullaby : handleStartLullaby}
+        />
+      )}
+
       <FormControl fullWidth sx={{ mb: 2 }}>
         <InputLabel>Select Music</InputLabel>
         <Select
           value={settings.selectedMusic}
-          onChange={(e) =>
-            setSettings({ ...settings, selectedMusic: e.target.value })
-          }
+          onChange={(e) => handleMusicChange(e.target.value)}
         >
           {musicFiles.map((file) => (
             <MenuItem key={file.id} value={file.id}>
@@ -82,17 +117,6 @@ const LullabyControls = () => {
         max={120}
         step={5}
         marks
-        sx={{ mb: 2 }}
-      />
-
-      <Typography gutterBottom>Volume</Typography>
-      <Slider
-        value={settings.volume}
-        onChange={(_, value) =>
-          setSettings({ ...settings, volume: value as number })
-        }
-        min={0}
-        max={100}
         sx={{ mb: 2 }}
       />
 

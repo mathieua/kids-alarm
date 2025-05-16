@@ -2,24 +2,17 @@
   "dates": [
     {
       "id": "1",
-      "title": "Mom's Birthday",
-      "date": "2024-05-15",
-      "type": "birthday",
-      "description": "Mom's special day!"
-    },
-    {
-      "id": "2",
       "title": "Christmas",
       "date": "2024-12-25",
       "type": "holiday",
       "description": "Christmas Day"
     },
     {
-      "id": "3",
-      "title": "First Day of School",
-      "date": "2024-09-01",
-      "type": "event",
-      "description": "Back to school!"
+      "id": "2",
+      "title": "New Year's Day",
+      "date": "2025-01-01",
+      "type": "holiday",
+      "description": "First day of the year"
     }
   ]
 } 

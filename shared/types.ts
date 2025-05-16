@@ -34,10 +34,8 @@ export interface WeatherData {
 export interface MusicFile {
   id: string;
   title: string;
-  artist?: string;
-  duration: number;
   path: string;
-  category: 'lullaby' | 'alarm' | 'ambient';
+  duration: number;
 }
 
 export interface LullabySettings {

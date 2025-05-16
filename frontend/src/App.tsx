@@ -11,6 +11,7 @@ import WeatherWidget from './components/WeatherWidget'
 import ImportantDates from './components/ImportantDates'
 import LullabyControls from './components/LullabyControls'
 import ThemeSelector from './components/ThemeSelector'
+import AudioPlayer from './components/AudioPlayer'
 
 function App() {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>({
@@ -62,9 +63,13 @@ function App() {
           <ImportantDates />
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <LullabyControls />
           <ThemeSelector onThemeChange={setCurrentTheme} />
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <AudioPlayer />
         </Box>
       </Box>
     </ThemeProvider>

@@ -1,13 +1,13 @@
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { ImportantDate } from '../../shared/types';
+import type { ImportantDate } from 'shared/types';
 
 const router = express.Router();
 const configPath = path.join(__dirname, '../../../config/dates.json');
 
 // Get all important dates
-router.get('/', async (req, res) => {
+router.get('/', (async (req, res) => {
   try {
     const data = await fs.readFile(configPath, 'utf-8');
     const dates = JSON.parse(data);
@@ -16,10 +16,29 @@ router.get('/', async (req, res) => {
     console.error('Error reading dates:', error);
     res.status(500).json({ error: 'Failed to read dates' });
   }
-});
+}) as RequestHandler);
 
-// Create a new important date
-router.post('/', async (req, res) => {
+// Get a specific date
+router.get('/:id', (async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await fs.readFile(configPath, 'utf-8');
+    const dates = JSON.parse(data);
+    const date = dates.dates.find((d: ImportantDate) => d.id === id);
+
+    if (!date) {
+      return res.status(404).json({ error: 'Date not found' });
+    }
+
+    res.json(date);
+  } catch (error) {
+    console.error('Error reading date:', error);
+    res.status(500).json({ error: 'Failed to read date' });
+  }
+}) as RequestHandler);
+
+// Create a new date
+router.post('/', (async (req, res) => {
   try {
     const newDate = req.body;
     const data = await fs.readFile(configPath, 'utf-8');
@@ -34,10 +53,10 @@ router.post('/', async (req, res) => {
     console.error('Error creating date:', error);
     res.status(500).json({ error: 'Failed to create date' });
   }
-});
+}) as RequestHandler);
 
-// Update an important date
-router.patch('/:id', async (req, res) => {
+// Update a date
+router.patch('/:id', (async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -60,10 +79,10 @@ router.patch('/:id', async (req, res) => {
     console.error('Error updating date:', error);
     res.status(500).json({ error: 'Failed to update date' });
   }
-});
+}) as RequestHandler);
 
-// Delete an important date
-router.delete('/:id', async (req, res) => {
+// Delete a date
+router.delete('/:id', (async (req, res) => {
   try {
     const { id } = req.params;
     const data = await fs.readFile(configPath, 'utf-8');
@@ -76,11 +95,11 @@ router.delete('/:id', async (req, res) => {
 
     dates.dates.splice(dateIndex, 1);
     await fs.writeFile(configPath, JSON.stringify(dates, null, 2));
-    res.status(204).send();
+    res.json({ message: 'Date deleted' });
   } catch (error) {
     console.error('Error deleting date:', error);
     res.status(500).json({ error: 'Failed to delete date' });
   }
-});
+}) as RequestHandler);
 
 export default router; 
