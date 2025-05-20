@@ -9,6 +9,9 @@ interface WeatherData {
     humidity: number;
     windSpeed: number;
     city: string;
+    dailyIcon?: string;
+    minTemp?: number;
+    maxTemp?: number;
 }
 
 const WeatherWidget = () => {
@@ -93,7 +96,7 @@ const WeatherWidget = () => {
                 }}
             >
                 <img
-                    src={`http://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                    src={`http://openweathermap.org/img/wn/${weather.dailyIcon || weather.icon}@2x.png`}
                     alt={weather.description}
                     style={{ width: 50, height: 50 }}
                 />
@@ -105,6 +108,11 @@ const WeatherWidget = () => {
             <Typography variant="body2" color="text.secondary">
                 Humidity: {weather.humidity}% | Wind: {weather.windSpeed} km/h
             </Typography>
+            {typeof weather.minTemp === "number" && typeof weather.maxTemp === "number" && (
+                <Typography variant="body2" color="text.secondary">
+                    Min: {weather.minTemp}°C | Max: {weather.maxTemp}°C
+                </Typography>
+            )}
         </Box>
     );
 };

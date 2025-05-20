@@ -17,6 +17,7 @@
     "@fluentui/react-components": "^9.64.0",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
+    "@use-gesture/react": "^10.3.1",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "react": "^19.1.0",

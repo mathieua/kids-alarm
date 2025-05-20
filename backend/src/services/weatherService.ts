@@ -12,6 +12,9 @@ export interface WeatherData {
   humidity: number;
   windSpeed: number;
   city: string;
+  minTemp?: number;
+  maxTemp?: number;
+  dailyIcon?: string;
 }
 
 export class WeatherService {
@@ -52,6 +55,7 @@ export class WeatherService {
       );
 
       const data = response.data;
+      console.log(data);
       const weatherData: WeatherData = {
         temperature: Math.round(data.main.temp),
         description: data.weather[0].description,
@@ -59,6 +63,11 @@ export class WeatherService {
         humidity: data.main.humidity,
         windSpeed: Math.round(data.wind.speed * 3.6), // Convert m/s to km/h
         city: data.name,
+        
+        minTemp: Math.round(data.main.temp_min),
+        maxTemp: Math.round(data.main.temp_max),
+        // maxTemp: Math.round(data.daily.temp.max),
+        // dailyIcon: data.daily.weather[0].icon,
       };
 
       // Update cache

@@ -1,27 +1,99 @@
 import {
     makeStyles,
+    Spinner,
     Text,
-    tokens,
 } from "@fluentui/react-components";
-import { ClockAlarmRegular, WeatherSunnyFilled } from "@fluentui/react-icons";
+import { ClockAlarmRegular } from "@fluentui/react-icons";
 import { useState } from "react";
 import { useEffect } from "react";
+import axios from "axios";
+
+interface WeatherData {
+    temperature: number;
+    description: string;
+    icon: string;
+    humidity: number;
+    windSpeed: number;
+    city: string;
+    dailyIcon?: string;
+    minTemp?: number;
+    maxTemp?: number;
+}
 
 type ClockProps = {
-    weatherMin: number;
-    weatherMax: number;
-    alarmTime: string;
 };
 
-const Clock = ({ weatherMin, weatherMax, alarmTime }: ClockProps) => {
+const Clock = ({ }: ClockProps) => {
     const classes = useStyles();
 
     const [now, setNow] = useState(new Date());
+    const [weather, setWeather] = useState<WeatherData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchWeather = async (lat?: number, lon?: number) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const params = lat && lon ? `?lat=${lat}&lon=${lon}` : "";
+            const response = await axios.get(
+                `http://localhost:3001/api/weather${params}`
+            );
+            setWeather(response.data);
+        } catch (error) {
+            console.error("Error fetching weather:", error);
+            setError("Failed to fetch weather data");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
+        const getLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        fetchWeather(
+                            position.coords.latitude,
+                            position.coords.longitude
+                        );
+                    },
+                    (error) => {
+                        console.error("Error getting location:", error);
+                        // Fallback to default location (Paris)
+                        fetchWeather();
+                    }
+                );
+            } else {
+                console.log("Geolocation is not supported by this browser.");
+                // Fallback to default location (Paris)
+                fetchWeather();
+            }
+        };
+
+        getLocation();
+
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    if (loading) {
+        return (
+            <Spinner />
+        );
+    }
+
+    if (error) {
+        console.error(error);
+        return (
+            <></>
+        );
+    }
+
+    if (!weather) {
+        return null;
+    }
+
 
     const timeStr = now.toLocaleTimeString([], {
         hour: "2-digit",
@@ -40,9 +112,14 @@ const Clock = ({ weatherMin, weatherMax, alarmTime }: ClockProps) => {
         <div className={classes.topRow}>
             {/* Weather */}
             <div className={classes.weatherBox}>
-                <WeatherSunnyFilled className={classes.weatherIcon} />
+                {/* <WeatherSunnyFilled className={classes.weatherIcon} /> */}
+                <img
+                    src={`http://openweathermap.org/img/wn/${weather.dailyIcon || weather.icon}@2x.png`}
+                    alt={weather.description}
+                    style={{ width: 48, height: 48 }}
+                />
                 <Text className={classes.weatherText}>
-                    {weatherMin}°/ {weatherMax}°
+                    {weather.minTemp}°/ {weather.maxTemp}°
                 </Text>
             </div>
 
@@ -51,7 +128,9 @@ const Clock = ({ weatherMin, weatherMax, alarmTime }: ClockProps) => {
                 <div className={classes.alarmIcon}>
                     <ClockAlarmRegular />
                 </div>
-                <Text className={classes.alarmLabel}><Text className={classes.alarmTime}>{alarmTime}</Text></Text>
+                <Text className={classes.alarmLabel}><Text className={classes.alarmTime}>
+                    {/* {alarmTime} */}
+                </Text></Text>
 
             </div>
         </div>
