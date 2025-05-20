@@ -1,0 +1,12 @@
+{
+  "name": "kids-alarm",
+  "version": "1.0.0",
+  "description": "Kids Alarm System",
+  "scripts": {
+    "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

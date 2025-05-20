@@ -1,79 +1,62 @@
-import { useState } from 'react'
-import { ThemeProvider, createTheme } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import Box from '@mui/material/Box'
-import type { Alarm, Theme as ThemeType } from 'shared/types'
+import { useState } from "react";
+import {
+    FluentProvider,
+    webLightTheme,
+    makeStyles,
+    webDarkTheme,
+} from "@fluentui/react-components";
+import type { Alarm, Theme as ThemeType } from "shared/types";
 
 // Import components (to be created)
-import Clock from './components/Clock'
-import AlarmDisplay from './components/AlarmDisplay'
-import WeatherWidget from './components/WeatherWidget'
-import ImportantDates from './components/ImportantDates'
-import LullabyControls from './components/LullabyControls'
-import ThemeSelector from './components/ThemeSelector'
-import AudioPlayer from './components/AudioPlayer'
+import AlarmDisplay from "./components/AlarmDisplay";
+import WeatherWidget from "./components/WeatherWidget";
+import ImportantDates from "./components/ImportantDates";
+import LullabyControls from "./components/LullabyControls";
+import ThemeSelector from "./components/ThemeSelector";
+import AudioPlayer from "./components/AudioPlayer";
+import Clock from "./components/clock/Clock";
 
 function App() {
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>({
-    id: 'default',
-    name: 'Default',
-    primaryColor: '#4A90E2',
-    secondaryColor: '#50E3C2',
-    backgroundColor: '#FFFFFF',
-    textColor: '#333333'
-  })
+    const styles = useStyles();
+    // const [currentTheme, setCurrentTheme] = useState<ThemeType>({
+    //     id: "default",
+    //     name: "Default",
+    //     primaryColor: "#4A90E2",
+    //     secondaryColor: "#50E3C2",
+    //     backgroundColor: "#FFFFFF",
+    //     textColor: "#333333",
+    // });
 
-  const theme = createTheme({
-    palette: {
-      primary: {
-        main: currentTheme.primaryColor,
-      },
-      secondary: {
-        main: currentTheme.secondaryColor,
-      },
-      background: {
-        default: currentTheme.backgroundColor,
-        paper: currentTheme.backgroundColor,
-      },
-      text: {
-        primary: currentTheme.textColor,
-      },
-    },
-  })
+    // Use the default webLightTheme as our base
+    // In a more complete implementation, we would create a custom theme
+    // that incorporates all the colors from currentTheme
+    const theme = webDarkTheme;
 
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          p: 2,
-          backgroundColor: 'background.default',
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Clock />
-          <WeatherWidget />
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <AlarmDisplay />
-          <ImportantDates />
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <LullabyControls />
-          <ThemeSelector onThemeChange={setCurrentTheme} />
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <AudioPlayer />
-        </Box>
-      </Box>
-    </ThemeProvider>
-  )
+    return (
+        <FluentProvider
+            className={styles.appContainer}
+            theme={theme}
+        // style={
+        //     {
+        //         "--brand-color": currentTheme.primaryColor,
+        //         "--background-color": currentTheme.backgroundColor,
+        //         "--text-color": currentTheme.textColor,
+        //     } as React.CSSProperties
+        // }
+        >
+            <Clock weatherMin={13} weatherMax={21} alarmTime="07:30" />
+        </FluentProvider>
+    );
 }
 
-export default App
+const useStyles = makeStyles({
+    appContainer: {
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "var(--colorNeutralBackground1)",
+    },
+});
+
+export default App;

@@ -1,0 +1,16 @@
+# Build artifacts
+dist/
+node_modules/
+
+# Cache
+.eslintcache
+.vite/
+
+# Config files where specific formatting is important
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+coverage/
+*.min.js 
