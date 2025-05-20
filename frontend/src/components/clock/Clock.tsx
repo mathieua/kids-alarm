@@ -78,7 +78,7 @@ const useStyles = makeStyles({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        padding: "80px"
+        padding: "48px"
     },
 
     topRow: {
@@ -86,7 +86,6 @@ const useStyles = makeStyles({
         alignItems: "center",
         justifyContent: "space-between",
         width: "100%",
-        height: "96px"
     },
 
     timeText: {

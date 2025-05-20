@@ -15,6 +15,7 @@ import LullabyControls from "./components/LullabyControls";
 import ThemeSelector from "./components/ThemeSelector";
 import AudioPlayer from "./components/AudioPlayer";
 import Clock from "./components/clock/Clock";
+import MusicPlayer from "./components/music-player/MusicPlayer";
 
 function App() {
     const styles = useStyles();
@@ -44,7 +45,9 @@ function App() {
         //     } as React.CSSProperties
         // }
         >
-            <Clock weatherMin={13} weatherMax={21} alarmTime="07:30" />
+            {/* <Clock weatherMin={13} weatherMax={21} alarmTime="07:30" /> */}
+            {/* <AudioPlayer /> */}
+            <MusicPlayer playlistId="1" />
         </FluentProvider>
     );
 }
