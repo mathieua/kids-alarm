@@ -5,6 +5,7 @@ import {
     tokens,
     Slider,
     type SliderOnChangeData,
+    mergeClasses,
 } from "@fluentui/react-components";
 import {
     PlayCircleRegular,
@@ -13,7 +14,7 @@ import {
     NextRegular,
     Speaker0Regular,
 } from "@fluentui/react-icons";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { playlists } from "../../data/playlists";
 import type { Song } from "../../types/audio";
 
@@ -105,7 +106,9 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
             // Update the current song first
             setCurrentSong(song);
 
-            // Then update the status
+            // Reset seek state and set isPlaying true
+            setIsDragging(false);
+            setSeekValue(null);
             setStatus(prev => ({
                 ...prev,
                 isPlaying: true,
@@ -175,23 +178,47 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
         setSeekValue(data.value);
     };
 
-    const handleSeekCommitted = async (_: any, data: SliderOnChangeData) => {
-        setIsDragging(false);
-        try {
-            const response = await fetch("http://localhost:3001/api/audio/seek", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ position: data.value }),
-            });
-            const responseData = await response.json();
-            if (responseData.status) {
-                setStatus(responseData.status);
+    const handleSeekRelease = async (event: React.PointerEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (isDragging && seekValue !== null) {
+            setIsDragging(false);
+            try {
+                const response = await fetch("http://localhost:3001/api/audio/seek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ position: seekValue }),
+                });
+                const responseData = await response.json();
+                if (responseData.status) {
+                    setStatus(responseData.status);
+                }
+                // Always fetch status after seek to update UI
+                await fetchStatus();
+            } catch (error) {
+                console.error("Error seeking audio:", error);
+                fetchStatus();
+            } finally {
+                setSeekValue(null);
             }
-        } catch (error) {
-            console.error("Error seeking audio:", error);
-            fetchStatus();
-        } finally {
-            setSeekValue(null);
+        }
+    };
+
+    const handlePrevious = async () => {
+        if (!currentSong) return;
+        const currentIndex = songs.findIndex(song => song.id === currentSong.id);
+        if (currentIndex > 0) {
+            const previousSong = songs[currentIndex - 1];
+            await handlePlay(previousSong);
+        }
+    };
+
+    const handleNext = async () => {
+        if (!currentSong) return;
+        const currentIndex = songs.findIndex(song => song.id === currentSong.id);
+        if (currentIndex < songs.length - 1) {
+            const nextSong = songs[currentIndex + 1];
+            await handlePlay(nextSong);
         }
     };
 
@@ -199,6 +226,12 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
         return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    };
+
+    // Prevent swipe/scroll on slider interaction
+    const preventTouchScroll = (event: React.PointerEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
     };
 
     if (!playlist) {
@@ -251,10 +284,13 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
                         {/* Progress bar */}
                         <div className={classes.progressContainer}>
                             <Slider
+                                className={classes.noTouchAction}
                                 value={isDragging ? seekValue || 0 : status.progress || 0}
                                 max={status.duration || 0}
                                 onChange={handleSeekChange}
-                                onChangeCommitted={handleSeekCommitted}
+                                onPointerUp={handleSeekRelease}
+                                onPointerDown={preventTouchScroll}
+                                onPointerMove={preventTouchScroll}
                                 disabled={!currentSong}
                             />
                             <div className={classes.timeDisplay}>
@@ -272,7 +308,7 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
                             <Button
                                 appearance="transparent"
                                 icon={<PreviousRegular />}
-                                onClick={() => { }}
+                                onClick={handlePrevious}
                                 className={classes.controlButton}
                             />
                             <Button
@@ -290,7 +326,7 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
                             <Button
                                 appearance="transparent"
                                 icon={<NextRegular />}
-                                onClick={() => { }}
+                                onClick={handleNext}
                                 className={classes.controlButton}
                             />
                         </div>
@@ -299,11 +335,13 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
                         <div className={classes.volumeControl}>
                             <Speaker0Regular className={classes.volumeIcon} />
                             <Slider
+                                className={mergeClasses(classes.volumeSlider, classes.noTouchAction)}
                                 value={status.volume}
                                 onChange={handleVolumeChange}
                                 min={0}
                                 max={100}
-                                className={classes.volumeSlider}
+                                onPointerDown={preventTouchScroll}
+                                onPointerMove={preventTouchScroll}
                             />
                         </div>
                     </>
@@ -510,5 +548,8 @@ const useStyles = makeStyles({
         height: "4px",
         borderRadius: "2px",
         backgroundColor: tokens.colorNeutralBackground3,
+    },
+    noTouchAction: {
+        touchAction: 'none',
     },
 }); 

@@ -16,8 +16,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
 import StopIcon from "@mui/icons-material/Stop";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import type { AudioStatus, Song, Playlist } from "../types/audio";
-import { playlists } from "../data/playlists";
+import type { AudioStatus, Song, Playlist } from "../../types/audio";
+import { playlists } from "../../data/playlists";
 
 const AudioPlayer = () => {
     const [status, setStatus] = useState<AudioStatus>({
@@ -259,7 +259,7 @@ const AudioPlayer = () => {
                                                     </Typography>
                                                     <Box sx={{ mt: 1 }}>
                                                         {status.isPlaying &&
-                                                        currentSong?.id ===
+                                                            currentSong?.id ===
                                                             song.id ? (
                                                             <Button
                                                                 variant="contained"
@@ -289,7 +289,7 @@ const AudioPlayer = () => {
                                                                 disabled={
                                                                     status.isPlaying &&
                                                                     currentSong?.id !==
-                                                                        song.id
+                                                                    song.id
                                                                 }
                                                             >
                                                                 Play
