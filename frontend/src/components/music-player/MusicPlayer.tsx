@@ -6,6 +6,7 @@ import {
     Slider,
     type SliderOnChangeData,
     mergeClasses,
+    Divider,
 } from "@fluentui/react-components";
 import {
     PlayCircleRegular,
@@ -13,6 +14,7 @@ import {
     PreviousRegular,
     NextRegular,
     Speaker0Regular,
+    DismissRegular,
 } from "@fluentui/react-icons";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playlists } from "../../data/playlists";
@@ -28,9 +30,10 @@ type AudioStatus = {
 
 type MusicPlayerProps = {
     playlistId: string;
+    onClose: () => void;
 };
 
-const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
+const MusicPlayer = ({ playlistId, onClose }: MusicPlayerProps) => {
     const classes = useStyles();
     const [status, setStatus] = useState<AudioStatus>({
         isPlaying: false,
@@ -42,15 +45,19 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [seekValue, setSeekValue] = useState<number | null>(null);
+    const [now, setNow] = useState(new Date());
 
     const playlist = playlists.find(p => p.id === playlistId);
     const songs = playlist?.songs || [];
 
-    // Fetch current status on component mount and periodically
     useEffect(() => {
         fetchStatus();
         const interval = setInterval(fetchStatus, 1000);
-        return () => clearInterval(interval);
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => {
+            clearInterval(interval);
+            clearInterval(timer);
+        };
     }, []);
 
     const fetchStatus = useCallback(async () => {
@@ -240,9 +247,22 @@ const MusicPlayer = ({ playlistId }: MusicPlayerProps) => {
 
     return (
         <div className={classes.container}>
+            {/* Top bar with current time and close button */}
+            {/* <div className={classes.topBar}>
+                <Text className={classes.currentTime}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</Text>
+                <Button
+                    icon={<DismissRegular />}
+                    appearance="subtle"
+                    onClick={onClose}
+                    className={classes.closeButton}
+                    aria-label="Close"
+                />
+            </div> */}
             {/* Left side - Playlist */}
             <div className={classes.playlistSection}>
-                <Text className={classes.playlistTitle}>{playlist.name}</Text>
+                <Text className={classes.currentTime} onClick={onClose}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</Text>
+                <Divider />
+                <Text className={classes.playlistTitle} >{playlist.name}</Text>
                 <div className={classes.songList}>
                     {songs.map((song) => (
                         <div
@@ -374,8 +394,8 @@ const useStyles = makeStyles({
         display: "flex",
         width: "100%",
         height: "100%",
-        padding: "48px",
-        gap: "48px",
+        padding: "32px",
+        gap: "32px",
     },
     playlistSection: {
         flex: 1,
@@ -551,5 +571,22 @@ const useStyles = makeStyles({
     },
     noTouchAction: {
         touchAction: 'none',
+    },
+    topBar: {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: "16px",
+    },
+    currentTime: {
+        fontSize: "32px",
+        fontWeight: "bold",
+    },
+    closeButton: {
+        fontSize: "32px",
+        minWidth: "48px",
+        minHeight: "48px",
+        alignSelf: "flex-end",
     },
 }); 

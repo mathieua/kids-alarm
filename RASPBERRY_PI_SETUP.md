@@ -90,7 +90,7 @@ This guide will help you set up and run the Kids Alarm application on a Raspberr
 
 3. **Access the Application**
    - Open a web browser on any device on your network
-   - Navigate to `http://[raspberry-pi-ip]:5173`
+   - Navigate to `http://[raspberry-pi-ip]:3000`
    - The backend API will be available at `http://[raspberry-pi-ip]:3001`
 
 ## Running as a Service (Optional)

@@ -2,8 +2,9 @@ import {
     makeStyles,
     Spinner,
     Text,
+    Button,
 } from "@fluentui/react-components";
-import { ClockAlarmRegular } from "@fluentui/react-icons";
+import { ClockAlarmRegular, PlayCircleRegular } from "@fluentui/react-icons";
 import { useState } from "react";
 import { useEffect } from "react";
 import axios from "axios";
@@ -21,9 +22,10 @@ interface WeatherData {
 }
 
 type ClockProps = {
+    onOpenMusicPlayer: () => void;
 };
 
-const Clock = ({ }: ClockProps) => {
+const Clock = ({ onOpenMusicPlayer }: ClockProps) => {
     const classes = useStyles();
 
     const [now, setNow] = useState(new Date());
@@ -140,8 +142,17 @@ const Clock = ({ }: ClockProps) => {
 
             {/* Date */}
             <Text className={classes.dateText}>{dateStr}</Text>
+
         </div>
 
+        <div className={classes.bottomRow}>
+            <Button
+                icon={<PlayCircleRegular className={classes.playIcon} />}
+                onClick={onOpenMusicPlayer}
+                className={classes.playButton}
+                appearance="transparent"
+            />
+        </div>
 
     </div>;
 };
@@ -188,7 +199,7 @@ const useStyles = makeStyles({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: "12px"
+        // gap: "12px"
     },
 
     timeAndDate: {
@@ -213,4 +224,24 @@ const useStyles = makeStyles({
     dateText: {
         fontSize: "48px",
     },
+    playButton: {
+        height: "48px",
+        width: "48px",
+        minWidth: "48px",
+        "& > span": {
+            height: "48px",
+            width: "48px",
+            fontSize: "48px"
+        },
+    },
+
+    bottomRow: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: "100%",
+    },
+    playIcon: {
+        fontSize: "48px"
+    }
 });
