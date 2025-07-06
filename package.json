@@ -4,6 +4,10 @@
   "description": "Kids Alarm System",
   "scripts": {
     "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "concurrently \"cd backend && npm run build\" \"cd frontend && npm run build\"",
+    "build:prod": "npm run build && npm run start:prod",
+    "start:prod": "cd backend && NODE_ENV=production npm start",
+    "clean": "rm -rf backend/dist && rm -rf frontend/dist",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {

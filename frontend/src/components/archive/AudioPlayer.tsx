@@ -31,7 +31,6 @@ const AudioPlayer = () => {
         null
     );
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
-    const [seeking, setSeeking] = useState(false);
     const [seekValue, setSeekValue] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -166,7 +165,6 @@ const AudioPlayer = () => {
     ) => {
         const position = value as number;
         setIsDragging(false);
-        setSeeking(true);
 
         try {
             const response = await fetch(
@@ -185,7 +183,6 @@ const AudioPlayer = () => {
             console.error("Error seeking audio:", error);
             fetchStatus();
         } finally {
-            setSeeking(false);
             setSeekValue(null);
         }
     };

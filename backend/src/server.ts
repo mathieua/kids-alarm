@@ -20,7 +20,12 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static files from the media directory
-app.use('/media', express.static(path.join(__dirname, '../../media')));
+app.use('/media', express.static(path.join(__dirname, '../../../../media')));
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../../../../frontend/dist')));
+}
 
 // API routes
 app.use('/api/alarms', alarmRoutes);
@@ -34,6 +39,13 @@ app.use('/api/audio', audioRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Serve frontend for all non-API routes in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../../../frontend/dist/index.html'));
+  });
+}
 
 // Start server
 app.listen(port, () => {

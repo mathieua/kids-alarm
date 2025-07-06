@@ -14,9 +14,8 @@ import {
     PreviousRegular,
     NextRegular,
     Speaker0Regular,
-    DismissRegular,
 } from "@fluentui/react-icons";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { playlists } from "../../data/playlists";
 import type { Song } from "../../types/audio";
 
