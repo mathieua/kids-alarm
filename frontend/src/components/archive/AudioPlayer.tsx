@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Button,
     Slider,
@@ -18,6 +18,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import type { AudioStatus, Song, Playlist } from "../../types/audio";
 import { playlists } from "../../data/playlists";
+import axios from "axios";
 
 const AudioPlayer = () => {
     const [status, setStatus] = useState<AudioStatus>({
@@ -31,9 +32,14 @@ const AudioPlayer = () => {
         null
     );
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
-    const [seeking, setSeeking] = useState(false);
     const [seekValue, setSeekValue] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [volume, setVolume] = useState(1);
+    const [isMuted, setIsMuted] = useState(false);
+
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     // Fetch current status on component mount and periodically
     useEffect(() => {
@@ -166,26 +172,14 @@ const AudioPlayer = () => {
     ) => {
         const position = value as number;
         setIsDragging(false);
-        setSeeking(true);
 
         try {
-            const response = await fetch(
-                "http://localhost:3001/api/audio/seek",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ position }),
-                }
-            );
-            const data = await response.json();
-            if (data.status) {
-                setStatus(data.status);
-            }
-        } catch (error) {
-            console.error("Error seeking audio:", error);
+            await axios.post(`http://speaker.local:3001/api/audio/seek`, {
+                position,
+            });
+            // Optimistically update the UI
             fetchStatus();
         } finally {
-            setSeeking(false);
             setSeekValue(null);
         }
     };

@@ -4,7 +4,6 @@ import {
     shorthands,
     Text,
     tokens,
-    mergeClasses,
 } from "@fluentui/react-components";
 
 interface ClockProps {

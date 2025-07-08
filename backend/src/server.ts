@@ -19,9 +19,6 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the media directory
-app.use('/media', express.static(path.join(__dirname, '../../media')));
-
 // API routes
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/dates', dateRoutes);
@@ -30,12 +27,21 @@ app.use('/api/themes', themeRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/audio', audioRoutes);
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
+
 // Basic health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${port}`);
 }); 

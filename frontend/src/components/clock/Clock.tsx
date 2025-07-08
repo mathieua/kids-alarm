@@ -39,7 +39,7 @@ const Clock = ({ onOpenMusicPlayer }: ClockProps) => {
             setError(null);
             const params = lat && lon ? `?lat=${lat}&lon=${lon}` : "";
             const response = await axios.get(
-                `http://localhost:3001/api/weather${params}`
+                `http://speaker.local:3001/api/weather${params}`
             );
             setWeather(response.data);
         } catch (error) {
@@ -62,14 +62,19 @@ const Clock = ({ onOpenMusicPlayer }: ClockProps) => {
                     },
                     (error) => {
                         console.error("Error getting location:", error);
-                        // Fallback to default location (Paris)
-                        fetchWeather();
+                        // Use default location (Paris) when geolocation fails
+                        // or when not in secure context
+                        fetchWeather(48.8566, 2.3522);
+                    },
+                    {
+                        timeout: 5000,
+                        enableHighAccuracy: false
                     }
                 );
             } else {
                 console.log("Geolocation is not supported by this browser.");
-                // Fallback to default location (Paris)
-                fetchWeather();
+                // Use default location (Paris) when geolocation is not supported
+                fetchWeather(48.8566, 2.3522);
             }
         };
 
