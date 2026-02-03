@@ -1,40 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { Navigation } from './components/Navigation'
+import { Clock } from './views/Clock'
+import { Media } from './views/Media'
+import { Alarms } from './views/Alarms'
+import './types'
 
 function App() {
-  const [time, setTime] = useState(new Date())
+  const [activeView, setActiveView] = useState('clock')
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const hours = time.getHours()
-  const minutes = time.getMinutes()
-  const seconds = time.getSeconds()
-
-  const displayHours = hours % 12 || 12
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-
-  const dateStr = time.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
+  const renderView = () => {
+    switch (activeView) {
+      case 'clock':
+        return <Clock />
+      case 'media':
+        return <Media />
+      case 'alarms':
+        return <Alarms />
+      default:
+        return <Clock />
+    }
+  }
 
   return (
     <div className="app">
-      <div className="clock-container">
-        <div className="time">
-          <span className="hours">{displayHours.toString().padStart(2, '0')}</span>
-          <span className="colon">:</span>
-          <span className="minutes">{minutes.toString().padStart(2, '0')}</span>
-          <span className="seconds">{seconds.toString().padStart(2, '0')}</span>
-          <span className="ampm">{ampm}</span>
-        </div>
-        <div className="date">{dateStr}</div>
-      </div>
+      <main className="main-content">{renderView()}</main>
+      <Navigation activeView={activeView} onViewChange={setActiveView} />
     </div>
   )
 }
