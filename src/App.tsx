@@ -3,18 +3,24 @@ import { Navigation } from './components/Navigation'
 import { Clock } from './views/Clock'
 import { Media } from './views/Media'
 import { Alarms } from './views/Alarms'
+import { DimmedClock } from './views/DimmedClock'
 import { useSwipe } from './hooks/useSwipe'
+import { useIdleTimer } from './hooks/useIdleTimer'
 import './types'
 
 const views = ['clock', 'media', 'alarms'] as const
 type View = typeof views[number]
 type Direction = 'left' | 'right'
 
+// Idle timeout in milliseconds (30 seconds for testing, increase for production)
+const IDLE_TIMEOUT = 30 * 1000
+
 function App() {
   const [activeView, setActiveView] = useState<View>('clock')
   const [slideDirection, setSlideDirection] = useState<Direction>('left')
   const [viewKey, setViewKey] = useState(0)
   const appRef = useRef<HTMLDivElement>(null)
+  const { isIdle, wake } = useIdleTimer(IDLE_TIMEOUT)
 
   const navigateTo = useCallback((newView: View, direction: Direction) => {
     if (newView !== activeView) {
@@ -49,6 +55,11 @@ function App() {
     onSwipeLeft: navigateNext,
     onSwipeRight: navigatePrev,
   })
+
+  // Show dimmed clock when idle
+  if (isIdle) {
+    return <DimmedClock onWake={wake} />
+  }
 
   const renderView = () => {
     const className = `view-wrapper slide-from-${slideDirection}`
