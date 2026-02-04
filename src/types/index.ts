@@ -3,6 +3,7 @@ export interface Track {
   filename: string
   filepath: string
   title: string
+  artwork?: string
   duration?: number
 }
 

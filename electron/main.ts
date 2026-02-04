@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import path from 'path'
 import { AudioService, Track } from './services/audio'
+import fs from 'fs'
 
 const isDev = process.env.NODE_ENV !== 'production'
 
@@ -100,6 +101,12 @@ function setupIpcHandlers() {
 }
 
 app.whenReady().then(() => {
+  // Register protocol for serving local media files
+  protocol.handle('media', (request) => {
+    const filePath = decodeURIComponent(request.url.replace('media://', ''))
+    return net.fetch('file://' + filePath)
+  })
+
   setupAudioService()
   setupIpcHandlers()
   createWindow()

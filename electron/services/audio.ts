@@ -8,6 +8,7 @@ export interface Track {
   filename: string
   filepath: string
   title: string
+  artwork?: string
   duration?: number
 }
 
@@ -46,7 +47,8 @@ export class AudioService extends EventEmitter {
 
   async scanMedia(): Promise<Track[]> {
     const tracks: Track[] = []
-    const extensions = ['.mp3', '.m4a', '.ogg', '.wav', '.flac']
+    const audioExtensions = ['.mp3', '.m4a', '.ogg', '.wav', '.flac']
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
 
     const scanDir = (dir: string) => {
       if (!fs.existsSync(dir)) {
@@ -55,18 +57,25 @@ export class AudioService extends EventEmitter {
       }
 
       const entries = fs.readdirSync(dir, { withFileTypes: true })
+      const files = entries.filter(e => !e.isDirectory()).map(e => e.name)
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name)
         if (entry.isDirectory()) {
           scanDir(fullPath)
-        } else if (extensions.includes(path.extname(entry.name).toLowerCase())) {
+        } else if (audioExtensions.includes(path.extname(entry.name).toLowerCase())) {
           const filename = entry.name
           const title = path.basename(filename, path.extname(filename))
+
+          // Look for matching artwork
+          const artwork = this.findArtwork(dir, title, files, imageExtensions)
+
           tracks.push({
             id: Buffer.from(fullPath).toString('base64'),
             filename,
             filepath: fullPath,
             title,
+            artwork,
           })
         }
       }
@@ -74,6 +83,31 @@ export class AudioService extends EventEmitter {
 
     scanDir(this.mediaDir)
     return tracks
+  }
+
+  private findArtwork(dir: string, title: string, files: string[], imageExtensions: string[]): string | undefined {
+    const titleLower = title.toLowerCase()
+
+    // First, try exact match (same name, different extension)
+    for (const ext of imageExtensions) {
+      const exactMatch = files.find(f => f.toLowerCase() === titleLower + ext)
+      if (exactMatch) {
+        return path.join(dir, exactMatch)
+      }
+    }
+
+    // Then try partial match (artwork filename contains track title or vice versa)
+    for (const file of files) {
+      const fileLower = file.toLowerCase()
+      const fileBase = path.basename(fileLower, path.extname(fileLower))
+      if (imageExtensions.includes(path.extname(fileLower))) {
+        if (fileBase.includes(titleLower.substring(0, 10)) || titleLower.includes(fileBase.substring(0, 10))) {
+          return path.join(dir, file)
+        }
+      }
+    }
+
+    return undefined
   }
 
   async play(track?: Track): Promise<void> {
@@ -93,11 +127,11 @@ export class AudioService extends EventEmitter {
     // -nodisp: no video window
     // -autoexit: exit when done
     // -loglevel quiet: suppress output
+    // Volume is controlled via ALSA mixer, not ffplay
     this.player = spawn('ffplay', [
       '-nodisp',
       '-autoexit',
       '-loglevel', 'quiet',
-      '-volume', String(this.state.volume),
       this.state.currentTrack.filepath,
     ])
 
@@ -169,7 +203,16 @@ export class AudioService extends EventEmitter {
 
   async setVolume(volume: number): Promise<void> {
     this.state.volume = Math.max(0, Math.min(100, volume))
-    // ffplay doesn't support runtime volume change, will apply on next track
+
+    // Use ALSA mixer for immediate volume control
+    try {
+      spawn('amixer', ['-c', 'USB', 'sset', 'PCM', `${volume}%`], {
+        stdio: 'ignore',
+      })
+    } catch (err) {
+      console.error('Failed to set volume:', err)
+    }
+
     this.emit('stateChange', this.getState())
   }
 
