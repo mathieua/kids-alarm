@@ -4,7 +4,10 @@
       "Bash(npm init:*)",
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(rsync:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

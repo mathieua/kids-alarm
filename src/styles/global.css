@@ -27,12 +27,14 @@ body {
 }
 
 .main-content {
-  flex: 1;
+  width: 800px;
+  height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
+
 
 /* Navigation */
 .navigation {
@@ -65,9 +67,57 @@ body {
   background: rgba(99, 102, 241, 0.8);
 }
 
+/* View wrapper for animations */
+.view-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.view-wrapper.slide-from-left {
+  animation: slideFromRight 0.25s ease-out;
+}
+
+.view-wrapper.slide-from-right {
+  animation: slideFromLeft 0.25s ease-out;
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* View containers */
+.clock-view,
+.media-view,
+.alarms-view {
+  width: 100%;
+  height: 100%;
+}
+
 /* Clock View */
 .clock-view {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .time {
@@ -121,8 +171,6 @@ body {
 
 /* Media View */
 .media-view {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 16px;
