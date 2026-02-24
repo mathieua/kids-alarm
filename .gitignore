@@ -4,7 +4,8 @@ dist/
 *.log
 .env
 .env.local
-data/*.db
+data/
+.claude/
 wpa_supplicant.conf
 media/*
 !media/.gitkeep
