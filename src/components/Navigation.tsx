@@ -1,15 +1,15 @@
+interface NavView {
+  id: string
+  label: string
+}
+
 interface NavigationProps {
+  views: NavView[]
   activeView: string
   onViewChange: (view: string) => void
 }
 
-export function Navigation({ activeView, onViewChange }: NavigationProps) {
-  const views = [
-    { id: 'clock', label: 'Clock' },
-    { id: 'media', label: 'Media' },
-    { id: 'alarms', label: 'Alarms' },
-  ]
-
+export function Navigation({ views, activeView, onViewChange }: NavigationProps) {
   return (
     <nav className="navigation">
       {views.map((view) => (

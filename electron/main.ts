@@ -131,6 +131,18 @@ app.whenReady().then(() => {
   const apiService = createApiService(mediaDir, dataDir)
   apiService.start(3000)
 
+  // Forward sync/USB events to renderer
+  apiService.sync.onEvent((event, payload) => {
+    mainWindow?.webContents.send('sync:event', { event, payload })
+  })
+
+  ipcMain.handle('sync:getDevice', () => apiService.sync.getDevice())
+  ipcMain.handle('sync:getDiff', () => apiService.sync.getDiff())
+  ipcMain.handle('sync:startSync', (_, deleteOrphans: string[]) => {
+    apiService.sync.startSync(deleteOrphans)
+  })
+  ipcMain.handle('sync:eject', () => apiService.sync.eject())
+
   setupAudioService()
   setupIpcHandlers(mediaDir)
   createWindow()

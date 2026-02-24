@@ -17,6 +17,35 @@ export interface PlaybackState {
   queueIndex: number
 }
 
+export interface UsbDevice {
+  mountPath: string
+  label: string
+  totalBytes: number
+  freeBytes: number
+}
+
+export interface SyncDiff {
+  toCopy: { relativePath: string; sizeBytes: number }[]
+  toSkip: { relativePath: string }[]
+  orphans: { relativePath: string; sizeBytes: number }[]
+}
+
+export interface SyncProgress {
+  copied: number
+  total: number
+  currentFile: string
+  bytesPerSecond: number
+}
+
+export interface SyncSummary {
+  copied: number
+  skipped: number
+  deleted: number
+  durationSeconds: number
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'complete' | 'error'
+
 export interface ElectronAPI {
   platform: string
   audio: {
@@ -33,6 +62,13 @@ export interface ElectronAPI {
     previous: () => Promise<void>
     onStateChange: (callback: (state: PlaybackState) => void) => () => void
     onTrackEnded: (callback: () => void) => () => void
+  }
+  sync: {
+    getDevice: () => Promise<UsbDevice | null>
+    getDiff: () => Promise<SyncDiff>
+    startSync: (deleteOrphans: string[]) => Promise<void>
+    eject: () => Promise<void>
+    onEvent: (callback: (event: string, payload: unknown) => void) => () => void
   }
 }
 

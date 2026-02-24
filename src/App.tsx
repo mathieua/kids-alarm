@@ -1,62 +1,107 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Navigation } from './components/Navigation'
 import { Clock } from './views/Clock'
 import { Media } from './views/Media'
 import { Alarms } from './views/Alarms'
+import { Sync } from './views/Sync'
 import { DimmedClock } from './views/DimmedClock'
 import { useSwipe } from './hooks/useSwipe'
 import { useIdleTimer } from './hooks/useIdleTimer'
 import './types'
 
-const views = ['clock', 'media', 'alarms'] as const
-type View = typeof views[number]
+const BASE_VIEWS = ['clock', 'media', 'alarms'] as const
+type BaseView = typeof BASE_VIEWS[number]
+type View = BaseView | 'sync'
 type Direction = 'left' | 'right'
 
-// Idle timeout in milliseconds (30 seconds for testing, increase for production)
 const IDLE_TIMEOUT = 30 * 1000
 
 function App() {
   const [activeView, setActiveView] = useState<View>('clock')
   const [slideDirection, setSlideDirection] = useState<Direction>('left')
   const [viewKey, setViewKey] = useState(0)
+  const [hasUsbDevice, setHasUsbDevice] = useState(false)
   const appRef = useRef<HTMLDivElement>(null)
   const { isIdle, wake } = useIdleTimer(IDLE_TIMEOUT)
 
-  const navigateTo = useCallback((newView: View, direction: Direction) => {
-    if (newView !== activeView) {
-      setSlideDirection(direction)
-      setActiveView(newView)
-      setViewKey(k => k + 1)
+  // Watch for USB device connect/disconnect
+  useEffect(() => {
+    window.electronAPI.sync.getDevice().then(dev => setHasUsbDevice(!!dev)).catch(() => {})
+    return window.electronAPI.sync.onEvent((event) => {
+      if (event === 'usb_connected') setHasUsbDevice(true)
+      else if (event === 'usb_disconnected') setHasUsbDevice(false)
+    })
+  }, [])
+
+  const views: View[] = useMemo(
+    () => hasUsbDevice ? [...BASE_VIEWS, 'sync'] : [...BASE_VIEWS],
+    [hasUsbDevice]
+  )
+
+  // Auto-navigate to sync on device connect; back to clock on disconnect
+  useEffect(() => {
+    if (hasUsbDevice) {
+      navigateTo('sync', 'left')
+    } else if (activeView === 'sync') {
+      navigateTo('clock', 'right')
     }
-  }, [activeView])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUsbDevice])
+
+  const navigateTo = useCallback((newView: View, direction: Direction) => {
+    setActiveView(prev => {
+      if (newView !== prev) {
+        setSlideDirection(direction)
+        setViewKey(k => k + 1)
+        return newView
+      }
+      return prev
+    })
+  }, [])
 
   const navigateNext = useCallback(() => {
-    const currentIndex = views.indexOf(activeView)
-    if (currentIndex < views.length - 1) {
-      navigateTo(views[currentIndex + 1], 'left')
-    }
-  }, [activeView, navigateTo])
+    setActiveView(prev => {
+      const currentIndex = views.indexOf(prev)
+      if (currentIndex < views.length - 1) {
+        setSlideDirection('left')
+        setViewKey(k => k + 1)
+        return views[currentIndex + 1]
+      }
+      return prev
+    })
+  }, [views])
 
   const navigatePrev = useCallback(() => {
-    const currentIndex = views.indexOf(activeView)
-    if (currentIndex > 0) {
-      navigateTo(views[currentIndex - 1], 'right')
-    }
-  }, [activeView, navigateTo])
+    setActiveView(prev => {
+      const currentIndex = views.indexOf(prev)
+      if (currentIndex > 0) {
+        setSlideDirection('right')
+        setViewKey(k => k + 1)
+        return views[currentIndex - 1]
+      }
+      return prev
+    })
+  }, [views])
 
   const handleViewChange = useCallback((view: string) => {
-    const currentIndex = views.indexOf(activeView)
-    const newIndex = views.indexOf(view as View)
-    const direction = newIndex > currentIndex ? 'left' : 'right'
-    navigateTo(view as View, direction)
-  }, [activeView, navigateTo])
+    setActiveView(prev => {
+      const currentIndex = views.indexOf(prev as View)
+      const newIndex = views.indexOf(view as View)
+      const direction = newIndex > currentIndex ? 'left' : 'right'
+      if (view !== prev) {
+        setSlideDirection(direction)
+        setViewKey(k => k + 1)
+        return view as View
+      }
+      return prev
+    })
+  }, [views])
 
   useSwipe(appRef, {
     onSwipeLeft: navigateNext,
     onSwipeRight: navigatePrev,
   })
 
-  // Show dimmed clock when idle
   if (isIdle) {
     return <DimmedClock onWake={wake} />
   }
@@ -64,23 +109,27 @@ function App() {
   const renderView = () => {
     const className = `view-wrapper slide-from-${slideDirection}`
     switch (activeView) {
-      case 'clock':
-        return <div key={viewKey} className={className}><Clock /></div>
-      case 'media':
-        return <div key={viewKey} className={className}><Media /></div>
-      case 'alarms':
-        return <div key={viewKey} className={className}><Alarms /></div>
-      default:
-        return <div key={viewKey} className={className}><Clock /></div>
+      case 'clock':   return <div key={viewKey} className={className}><Clock /></div>
+      case 'media':   return <div key={viewKey} className={className}><Media /></div>
+      case 'alarms':  return <div key={viewKey} className={className}><Alarms /></div>
+      case 'sync':    return <div key={viewKey} className={className}><Sync /></div>
+      default:        return <div key={viewKey} className={className}><Clock /></div>
     }
   }
+
+  const navViews = [
+    { id: 'clock', label: 'Clock' },
+    { id: 'media', label: 'Media' },
+    { id: 'alarms', label: 'Alarms' },
+    ...(hasUsbDevice ? [{ id: 'sync', label: 'Sync' }] : []),
+  ]
 
   return (
     <div className="app" ref={appRef}>
       <main className="main-content">
         {renderView()}
       </main>
-      <Navigation activeView={activeView} onViewChange={handleViewChange} />
+      <Navigation views={navViews} activeView={activeView} onViewChange={handleViewChange} />
     </div>
   )
 }

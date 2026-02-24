@@ -32,6 +32,7 @@ type Category = typeof CATEGORIES[number]
 // ---- WebSocket broadcast ----
 
 let wss: WebSocketServer
+let ipcBroadcast: ((event: string, payload: unknown) => void) | null = null
 
 function broadcast(event: string, payload: unknown): void {
   const message = JSON.stringify({ event, ...payload as object })
@@ -40,6 +41,7 @@ function broadcast(event: string, payload: unknown): void {
       client.send(message)
     }
   }
+  ipcBroadcast?.(event, payload)
 }
 
 // ---- Slugify helper ----
@@ -423,6 +425,43 @@ export function createApiService(mediaDir: string, dataDir: string) {
         usbPollInterval = null
       }
       httpServer.close()
+    },
+    sync: {
+      getDevice: () => currentUsbDevice,
+      getDiff: (): Promise<SyncDiff> => {
+        if (!currentUsbDevice) return Promise.reject(new Error('No device'))
+        return computeDiff(mediaDir, currentUsbDevice.mountPath)
+      },
+      startSync: (deleteOrphans: string[]) => {
+        if (!currentUsbDevice) throw new Error('No device')
+        if (activeSyncJob?.status === 'syncing') throw new Error('Already syncing')
+        const device = currentUsbDevice
+        activeSyncJob = { status: 'syncing', progress: null, summary: null, error: null }
+        computeDiff(mediaDir, device.mountPath)
+          .then(diff => runSyncJob(diff, deleteOrphans, mediaDir, device.mountPath))
+          .catch(err => {
+            if (activeSyncJob) {
+              activeSyncJob.status = 'error'
+              activeSyncJob.error = (err as Error).message
+              broadcast('sync_error', { error: (err as Error).message })
+            }
+          })
+      },
+      eject: async () => {
+        if (!currentUsbDevice) throw new Error('No device')
+        const { mountPath } = currentUsbDevice
+        if (process.platform === 'darwin') {
+          await execAsync(`diskutil eject "${mountPath}"`)
+        } else {
+          await execAsync(`sudo umount "${mountPath}"`)
+        }
+        currentUsbDevice = null
+        lastDetectedMountPath = null
+        broadcast('usb_disconnected', { mountPath })
+      },
+      onEvent: (cb: (event: string, payload: unknown) => void) => {
+        ipcBroadcast = cb
+      },
     },
   }
 }

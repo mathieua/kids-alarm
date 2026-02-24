@@ -50,4 +50,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('audio:trackEnded', listener)
     },
   },
+
+  // Sync controls
+  sync: {
+    getDevice: () => ipcRenderer.invoke('sync:getDevice'),
+    getDiff: () => ipcRenderer.invoke('sync:getDiff'),
+    startSync: (deleteOrphans: string[]) => ipcRenderer.invoke('sync:startSync', deleteOrphans),
+    eject: () => ipcRenderer.invoke('sync:eject'),
+    onEvent: (callback: (event: string, payload: unknown) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, data: { event: string; payload: unknown }) => {
+        callback(data.event, data.payload)
+      }
+      ipcRenderer.on('sync:event', listener)
+      return () => ipcRenderer.removeListener('sync:event', listener)
+    },
+  },
 })
