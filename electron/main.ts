@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import path from 'path'
 import { AudioService, Track } from './services/audio'
+import { AlarmService } from './services/alarm'
 import { createApiService } from './services/api'
 import { getMediaItems } from './services/database'
 import fs from 'fs'
@@ -10,6 +11,11 @@ const isKiosk = !isDev && process.platform === 'linux'
 
 let mainWindow: BrowserWindow | null = null
 let audioService: AudioService
+let alarmService: AlarmService
+
+// Timers managed by main process when alarm fires
+let alarmVolumeRampTimer: NodeJS.Timeout | null = null
+let alarmAutoDismissTimer: NodeJS.Timeout | null = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -40,6 +46,17 @@ function createWindow() {
   }
 }
 
+function clearAlarmTimers() {
+  if (alarmVolumeRampTimer) {
+    clearInterval(alarmVolumeRampTimer)
+    alarmVolumeRampTimer = null
+  }
+  if (alarmAutoDismissTimer) {
+    clearTimeout(alarmAutoDismissTimer)
+    alarmAutoDismissTimer = null
+  }
+}
+
 function setupAudioService() {
   const mediaDir = isKiosk
     ? path.join(app.getPath('home'), 'alarm-clock/media')
@@ -55,6 +72,57 @@ function setupAudioService() {
   audioService.on('trackEnded', () => {
     mainWindow?.webContents.send('audio:trackEnded')
   })
+}
+
+function setupAlarmService() {
+  alarmService = new AlarmService()
+
+  alarmService.on('fired', async () => {
+    const tracks = await audioService.scanMedia()
+    if (tracks.length > 0) {
+      const alarm = alarmService.getAlarm()
+      const track = alarm?.sound_path
+        ? (tracks.find(t => t.filepath === alarm.sound_path) ?? tracks[Math.floor(Math.random() * tracks.length)])
+        : tracks[Math.floor(Math.random() * tracks.length)]
+      await audioService.setVolume(0)
+      await audioService.play(track)
+
+      // Ramp volume from 0 to 70 over 30s (10 steps × 3s)
+      let step = 0
+      const targetVolume = 70
+      const steps = 10
+      alarmVolumeRampTimer = setInterval(async () => {
+        step++
+        const vol = Math.round((targetVolume / steps) * step)
+        await audioService.setVolume(Math.min(vol, targetVolume))
+        if (step >= steps) {
+          clearInterval(alarmVolumeRampTimer!)
+          alarmVolumeRampTimer = null
+        }
+      }, 3000)
+    }
+
+    // Auto-dismiss after 5 minutes
+    alarmAutoDismissTimer = setTimeout(() => {
+      alarmService.dismiss()
+    }, 5 * 60_000)
+
+    mainWindow?.webContents.send('alarm:fired')
+  })
+
+  alarmService.on('dismissed', async () => {
+    clearAlarmTimers()
+    await audioService.stop()
+    mainWindow?.webContents.send('alarm:dismissed')
+  })
+
+  alarmService.on('snoozed', async () => {
+    clearAlarmTimers()
+    await audioService.stop()
+    mainWindow?.webContents.send('alarm:dismissed')
+  })
+
+  alarmService.start()
 }
 
 function setupIpcHandlers(mediaDir: string) {
@@ -111,6 +179,16 @@ function setupIpcHandlers(mediaDir: string) {
   ipcMain.handle('audio:previous', async () => {
     await audioService.playPrevious()
   })
+
+  // Alarm IPC handlers
+  ipcMain.handle('alarm:getAlarm', () => alarmService.getAlarm())
+  ipcMain.handle('alarm:setAlarm', (_, time: string, enabled: boolean, soundPath?: string | null) => {
+    const updated = alarmService.setAlarm(time, enabled, soundPath)
+    mainWindow?.webContents.send('alarm:updated', updated)
+    return updated
+  })
+  ipcMain.handle('alarm:snooze', () => alarmService.snooze())
+  ipcMain.handle('alarm:dismiss', () => alarmService.dismiss())
 }
 
 app.whenReady().then(() => {
@@ -144,6 +222,7 @@ app.whenReady().then(() => {
   ipcMain.handle('sync:eject', () => apiService.sync.eject())
 
   setupAudioService()
+  setupAlarmService()
   setupIpcHandlers(mediaDir)
   createWindow()
 
@@ -155,6 +234,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  alarmService?.stop()
   if (process.platform !== 'darwin') {
     app.quit()
   }

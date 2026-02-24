@@ -2,6 +2,16 @@ import Database from 'better-sqlite3'
 import * as path from 'path'
 import * as fs from 'fs'
 
+export interface Alarm {
+  id: number
+  time: string
+  enabled: boolean
+  sound_path: string | null
+  snooze_minutes: number
+  auto_dismiss_minutes: number
+  created_at: string
+}
+
 export interface MediaItem {
   id: number
   title: string
@@ -44,6 +54,16 @@ export function initDatabase(dataDir: string): void {
       created_at DATETIME NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS alarms (
+      id INTEGER PRIMARY KEY,
+      time TEXT NOT NULL DEFAULT '07:00',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      sound_path TEXT,
+      snooze_minutes INTEGER NOT NULL DEFAULT 5,
+      auto_dismiss_minutes INTEGER NOT NULL DEFAULT 5,
+      created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS import_jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       youtube_url TEXT NOT NULL,
@@ -54,6 +74,13 @@ export function initDatabase(dataDir: string): void {
       created_at DATETIME NOT NULL DEFAULT (datetime('now'))
     );
   `)
+
+  // Migrate existing alarms table if sound_path column is missing
+  try {
+    db.exec(`ALTER TABLE alarms ADD COLUMN sound_path TEXT`)
+  } catch {
+    // Column already exists — no-op
+  }
 }
 
 // ---- Media Items ----
@@ -139,4 +166,20 @@ export function updateImportJob(id: number, patch: Partial<Pick<ImportJob, 'stat
   const fields = Object.keys(patch).map(k => `${k} = @${k}`).join(', ')
   if (!fields) return
   db.prepare(`UPDATE import_jobs SET ${fields} WHERE id = @id`).run({ ...patch, id })
+}
+
+// ---- Alarms ----
+
+export function getAlarm(): Alarm | undefined {
+  const row = db.prepare('SELECT * FROM alarms WHERE id = 1').get() as (Omit<Alarm, 'enabled'> & { enabled: number }) | undefined
+  if (!row) return undefined
+  return { ...row, enabled: row.enabled === 1 }
+}
+
+export function upsertAlarm(time: string, enabled: boolean, soundPath?: string | null): Alarm {
+  db.prepare(`
+    INSERT INTO alarms (id, time, enabled, sound_path) VALUES (1, @time, @enabled, @sound_path)
+    ON CONFLICT(id) DO UPDATE SET time = @time, enabled = @enabled, sound_path = @sound_path
+  `).run({ time, enabled: enabled ? 1 : 0, sound_path: soundPath ?? null })
+  return getAlarm()!
 }

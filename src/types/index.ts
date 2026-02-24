@@ -46,8 +46,26 @@ export interface SyncSummary {
 
 export type SyncStatus = 'idle' | 'syncing' | 'complete' | 'error'
 
+export interface Alarm {
+  id: number
+  time: string      // 'HH:MM'
+  enabled: boolean
+  sound_path: string | null
+  snooze_minutes: number
+  auto_dismiss_minutes: number
+}
+
 export interface ElectronAPI {
   platform: string
+  alarm: {
+    getAlarm: () => Promise<Alarm | null>
+    setAlarm: (time: string, enabled: boolean, soundPath?: string | null) => Promise<Alarm>
+    snooze: () => Promise<void>
+    dismiss: () => Promise<void>
+    onFired: (callback: () => void) => () => void
+    onDismissed: (callback: () => void) => () => void
+    onUpdated: (callback: (alarm: Alarm) => void) => () => void
+  }
   audio: {
     getState: () => Promise<PlaybackState>
     scanMedia: () => Promise<Track[]>

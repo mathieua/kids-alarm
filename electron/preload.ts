@@ -51,6 +51,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // Alarm controls
+  alarm: {
+    getAlarm: () => ipcRenderer.invoke('alarm:getAlarm'),
+    setAlarm: (time: string, enabled: boolean, soundPath?: string | null) => ipcRenderer.invoke('alarm:setAlarm', time, enabled, soundPath),
+    snooze: () => ipcRenderer.invoke('alarm:snooze'),
+    dismiss: () => ipcRenderer.invoke('alarm:dismiss'),
+    onFired: (callback: () => void) => {
+      const listener = () => callback()
+      ipcRenderer.on('alarm:fired', listener)
+      return () => ipcRenderer.removeListener('alarm:fired', listener)
+    },
+    onDismissed: (callback: () => void) => {
+      const listener = () => callback()
+      ipcRenderer.on('alarm:dismissed', listener)
+      return () => ipcRenderer.removeListener('alarm:dismissed', listener)
+    },
+    onUpdated: (callback: (alarm: unknown) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, alarm: unknown) => callback(alarm)
+      ipcRenderer.on('alarm:updated', listener)
+      return () => ipcRenderer.removeListener('alarm:updated', listener)
+    },
+  },
+
   // Sync controls
   sync: {
     getDevice: () => ipcRenderer.invoke('sync:getDevice'),

@@ -7,6 +7,7 @@ import { Sync } from './views/Sync'
 import { DimmedClock } from './views/DimmedClock'
 import { useSwipe } from './hooks/useSwipe'
 import { useIdleTimer } from './hooks/useIdleTimer'
+import { useAlarm } from './hooks/useAlarm'
 import './types'
 
 const BASE_VIEWS = ['clock', 'media', 'alarms'] as const
@@ -23,6 +24,7 @@ function App() {
   const [hasUsbDevice, setHasUsbDevice] = useState(false)
   const appRef = useRef<HTMLDivElement>(null)
   const { isIdle, wake } = useIdleTimer(IDLE_TIMEOUT)
+  const { alarm, isFiring, snooze, dismiss } = useAlarm()
 
   // Watch for USB device connect/disconnect
   useEffect(() => {
@@ -130,6 +132,29 @@ function App() {
         {renderView()}
       </main>
       <Navigation views={navViews} activeView={activeView} onViewChange={handleViewChange} />
+
+      {isFiring && (
+        <div className="alarm-overlay">
+          <div className="alarm-overlay-time">
+            {alarm ? (() => {
+              const [h, m] = alarm.time.split(':').map(Number)
+              const period = h >= 12 ? 'PM' : 'AM'
+              const dh = h % 12 || 12
+              return `${dh}:${String(m).padStart(2, '0')} ${period}`
+            })() : ''}
+          </div>
+          <div className="alarm-overlay-label">Wake Up!</div>
+          <div className="alarm-overlay-actions">
+            <button className="alarm-overlay-btn alarm-overlay-btn--snooze" onClick={snooze}>
+              <span>Snooze</span>
+              <span className="alarm-overlay-btn-sub">5 minutes</span>
+            </button>
+            <button className="alarm-overlay-btn alarm-overlay-btn--dismiss" onClick={dismiss}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

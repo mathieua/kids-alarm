@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAlarm } from '../hooks/useAlarm'
 
 export function Clock() {
   const [time, setTime] = useState(new Date())
+  const { alarm } = useAlarm()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,6 +35,16 @@ export function Clock() {
         <span className="ampm">{ampm}</span>
       </div>
       <div className="date">{dateStr}</div>
+      {alarm?.enabled && (
+        <div className="alarm-badge">
+          &#9201; {(() => {
+            const [h, m] = alarm.time.split(':').map(Number)
+            const period = h >= 12 ? 'PM' : 'AM'
+            const dh = h % 12 || 12
+            return `${dh}:${String(m).padStart(2, '0')} ${period}`
+          })()}
+        </div>
+      )}
     </div>
   )
 }
