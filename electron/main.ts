@@ -1,9 +1,12 @@
 import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import path from 'path'
 import { AudioService, Track } from './services/audio'
+import { createApiService } from './services/api'
+import { getMediaItems } from './services/database'
 import fs from 'fs'
 
 const isDev = process.env.NODE_ENV !== 'production'
+const isKiosk = !isDev && process.platform === 'linux'
 
 let mainWindow: BrowserWindow | null = null
 let audioService: AudioService
@@ -12,9 +15,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 480,
-    fullscreen: !isDev,
-    frame: isDev,
-    kiosk: !isDev,
+    fullscreen: isKiosk,
+    frame: !isKiosk,
+    kiosk: isKiosk,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -23,7 +26,7 @@ function createWindow() {
   })
 
   // Hide cursor in production (kiosk mode)
-  if (!isDev) {
+  if (isKiosk) {
     mainWindow.webContents.on('did-finish-load', () => {
       mainWindow?.webContents.insertCSS('* { cursor: none !important; }')
     })
@@ -38,9 +41,9 @@ function createWindow() {
 }
 
 function setupAudioService() {
-  const mediaDir = isDev
-    ? path.join(__dirname, '../../media')
-    : path.join(app.getPath('home'), 'alarm-clock/media')
+  const mediaDir = isKiosk
+    ? path.join(app.getPath('home'), 'alarm-clock/media')
+    : path.join(__dirname, '../../media')
 
   audioService = new AudioService(mediaDir)
 
@@ -54,13 +57,23 @@ function setupAudioService() {
   })
 }
 
-function setupIpcHandlers() {
+function setupIpcHandlers(mediaDir: string) {
   ipcMain.handle('audio:getState', () => {
     return audioService.getState()
   })
 
   ipcMain.handle('audio:scanMedia', async () => {
-    return await audioService.scanMedia()
+    const tracks = await audioService.scanMedia()
+    const dbItems = getMediaItems()
+    const dbByPath = new Map(dbItems.map(item => [item.file_path, item]))
+    return tracks.map(track => {
+      const dbItem = dbByPath.get(track.filepath)
+      if (!dbItem) return track
+      const artwork = dbItem.thumbnail_url
+        ? path.join(mediaDir, dbItem.thumbnail_url.replace(/^\/media\//, ''))
+        : track.artwork
+      return { ...track, title: dbItem.title, artwork }
+    })
   })
 
   ipcMain.handle('audio:play', async (_, track?: Track) => {
@@ -107,8 +120,19 @@ app.whenReady().then(() => {
     return net.fetch('file://' + filePath)
   })
 
+  const mediaDir = isKiosk
+    ? path.join(app.getPath('home'), 'alarm-clock/media')
+    : path.join(__dirname, '../../media')
+  const dataDir = isKiosk
+    ? path.join(app.getPath('home'), 'alarm-clock/data')
+    : path.join(__dirname, '../../data')
+  fs.mkdirSync(dataDir, { recursive: true })
+
+  const apiService = createApiService(mediaDir, dataDir)
+  apiService.start(3000)
+
   setupAudioService()
-  setupIpcHandlers()
+  setupIpcHandlers(mediaDir)
   createWindow()
 
   app.on('activate', () => {

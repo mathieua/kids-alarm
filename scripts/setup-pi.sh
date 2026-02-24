@@ -164,7 +164,7 @@ unclutter -idle 3 -root &
 
 # Start the alarm clock app
 cd ~/alarm-clock
-npm start
+NODE_ENV=production npm start
 EOF
 chmod +x ~/.xinitrc
 
@@ -180,7 +180,21 @@ fi
 EOF
 fi
 
-# Step 14: Verify I2C
+# Step 14: Configure USB audio as default output
+print_step "Configuring USB audio as default output..."
+# USB speaker will be card 1 (card 0 is onboard headphones)
+# This sets ALSA defaults so Electron/ffmpeg route to USB speaker automatically
+if ! grep -q "defaults.pcm.card" ~/.asoundrc 2>/dev/null; then
+    cat > ~/.asoundrc << 'EOF'
+defaults.pcm.card 1
+defaults.ctl.card 1
+EOF
+    echo "USB audio set as default (card 1)"
+else
+    echo "~/.asoundrc already configured"
+fi
+
+# Step 15: Verify I2C
 print_step "Verifying I2C configuration..."
 if sudo i2cdetect -y 1 > /dev/null 2>&1; then
     echo "I2C is working. Connected devices:"

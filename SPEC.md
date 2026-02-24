@@ -81,7 +81,7 @@ A Raspberry Pi-based multimedia alarm clock designed for children ages 7-11, fea
 ├─────────────────────────────────────────────────────────────┤
 │  System Services                                            │
 │  ├── systemd service (auto-start, watchdog, restart)        │
-│  ├── Network manager (WiFi config)                          │
+│  ├── Network manager (WiFi client + AP provisioning mode)   │
 │  └── RTC daemon (hwclock sync)                              │
 └─────────────────────────────────────────────────────────────┘
           │
@@ -639,6 +639,60 @@ Create systemd service for the Electron app to start on boot.
 - Pi 4 boots in ~20-40 seconds
 - App should launch within 5 seconds of desktop ready
 - Consider: splash screen, or clock-only fast-start mode
+
+---
+
+## WiFi Provisioning Mode
+
+### Overview
+
+When the Pi boots and cannot connect to any known WiFi network, it automatically switches to **Access Point (AP) mode**, allowing the user to connect directly from a phone or laptop to configure WiFi credentials — no monitor, keyboard, or SD card editing required.
+
+### Behavior
+
+```
+Pi boots
+  └── Tries known WiFi networks (timeout: ~30s)
+        ├── Connected → normal operation
+        └── No network found → activate AP mode
+              ├── Hotspot: "AlarmClock-Setup" (no password)
+              ├── Pi IP: 192.168.4.1
+              └── Serve WiFi setup page at http://192.168.4.1:3000/setup
+                    └── User submits credentials
+                          ├── Pi saves via nmcli
+                          ├── Deactivates AP
+                          └── Connects to new network → normal operation
+```
+
+### Implementation
+
+- **AP mode:** NetworkManager handles both client and AP mode natively on Bookworm — switch via `nmcli` (no `hostapd`/`dnsmasq` needed)
+- **Detection:** A systemd service (or the Electron main process) checks connectivity on boot and triggers AP mode if needed
+- **Setup UI:** A `/setup` route in the parent portal (Express) — only active in AP mode — renders a simple WiFi credential form
+- **On submission:** Calls `nmcli device wifi connect <ssid> password <pwd>`, then deactivates the AP connection
+
+### Key nmcli Commands
+
+```bash
+# Create AP hotspot
+nmcli device wifi hotspot ifname wlan0 ssid "AlarmClock-Setup" band bg
+
+# Check current connection
+nmcli -t -f NAME,TYPE,STATE connection show --active
+
+# Add a new WiFi network
+nmcli device wifi connect "MyNetwork" password "MyPassword"
+
+# Switch back to client mode (deactivate AP)
+nmcli connection down "Hotspot"
+```
+
+### UX Notes
+
+- AP hotspot name: `AlarmClock-Setup` (no password for easy access)
+- The alarm clock screen should show a "Setup WiFi" message with the network name when in AP mode
+- After successful connection, show the Pi's new IP / hostname for reference
+- Stored credentials persist across reboots (saved by NetworkManager)
 
 ---
 
