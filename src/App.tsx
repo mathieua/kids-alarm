@@ -125,11 +125,11 @@ function App() {
   const renderView = () => {
     const className = `view-wrapper slide-from-${slideDirection}`
     switch (activeView) {
-      case 'clock':   return <div key={viewKey} className={className}><Clock /></div>
-      case 'media':   return <div key={viewKey} className={className}><Media /></div>
+      case 'clock':   return <div key={viewKey} className={className}><Clock onNavigate={handleViewChange} /></div>
+      case 'media':   return <div key={viewKey} className={className}><Media onNavigate={handleViewChange} /></div>
       case 'alarms':  return <div key={viewKey} className={className}><Alarms /></div>
       case 'sync':    return <div key={viewKey} className={className}><Sync /></div>
-      default:        return <div key={viewKey} className={className}><Clock /></div>
+      default:        return <div key={viewKey} className={className}><Clock onNavigate={handleViewChange} /></div>
     }
   }
 
@@ -140,12 +140,16 @@ function App() {
     ...(hasUsbDevice ? [{ id: 'sync', label: 'Sync' }] : []),
   ]
 
+  const showNavigation = activeView !== 'clock' && activeView !== 'media'
+
   return (
-    <div className="app" ref={appRef}>
-      <main className="main-content">
+    <div className={`app ${(activeView === 'clock' || activeView === 'media') ? 'app--fullscreen' : ''}`} ref={appRef}>
+      <main className={`main-content ${(activeView === 'clock' || activeView === 'media') ? 'main-content--fullscreen' : ''}`}>
         {renderView()}
       </main>
-      <Navigation views={navViews} activeView={activeView} onViewChange={handleViewChange} />
+      {showNavigation && (
+        <Navigation views={navViews} activeView={activeView} onViewChange={handleViewChange} />
+      )}
 
       {isFiring && (
         <div className="alarm-overlay">
