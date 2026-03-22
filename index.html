@@ -1,12 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=800, height=480, user-scalable=no" />
-    <title>Alarm Clock</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=800, height=480, user-scalable=no" />
+  <title>Alarm Clock</title>
+  <!-- <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  <script>
+    // Mock Electron APIs for browser-based Figma capture                                                                                       
+    if (!window.electronAPI) {
+      window.electronAPI = {
+        platform: 'darwin',
+        audio: {
+          getState: () => Promise.resolve({
+            isPlaying: true, currentTrack: {
+              id: '1', filename: 'song.mp3', filepath: '/media/song.mp3',
+              title: 'Twinkle Twinkle Little Star', artwork: null
+            }, position: 45, duration: 180, volume: 50, queue: [], queueIndex: 0
+          }),
+          scanMedia: () => Promise.resolve([
+            {
+              id: '1', filename: 'song1.mp3', filepath: '/media/song1.mp3', title: 'Twinkle Twinkle Little Star', artwork: null,
+              duration: 180
+            },
+            { id: '2', filename: 'song2.mp3', filepath: '/media/song2.mp3', title: 'Baby Shark', artwork: null, duration: 120 },
+            { id: '3', filename: 'song3.mp3', filepath: '/media/song3.mp3', title: 'Wheels on the Bus', artwork: null, duration: 200 },
+          ]),
+          play: () => Promise.resolve(),
+          pause: () => Promise.resolve(),
+          resume: () => Promise.resolve(),
+          togglePlayPause: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+          setVolume: () => Promise.resolve(),
+          setQueue: () => { },
+          next: () => Promise.resolve(),
+          previous: () => Promise.resolve(),
+          onStateChange: () => () => { },
+          onTrackEnded: () => () => { },
+        },
+        alarm: {
+          getAlarm: () => Promise.resolve({ time: '07:00', enabled: true }),
+          setAlarm: () => Promise.resolve(),
+          snooze: () => Promise.resolve(),
+          dismiss: () => Promise.resolve(),
+          onFired: () => () => { },
+          onDismissed: () => () => { },
+          onUpdated: () => () => { },
+        },
+        wifi: {
+          getStatus: () => Promise.resolve({ apMode: false }),
+          onConnected: () => () => { },
+        },
+        sync: {
+          getDevice: () => Promise.resolve(null),
+          getDiff: () => Promise.resolve({ added: [], removed: [], modified: [] }),
+          startSync: () => Promise.resolve(),
+          eject: () => Promise.resolve(),
+          onEvent: () => () => { },
+        },
+      };
+    }                                                                                                                                           
+  </script> -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

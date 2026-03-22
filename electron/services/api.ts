@@ -7,6 +7,7 @@ import * as fs from 'fs'
 import * as fsPromises from 'fs/promises'
 import { spawn, exec, ChildProcess } from 'child_process'
 import { promisify } from 'util'
+import { WifiService, SETUP_PAGE_HTML } from './wifi'
 import {
   initDatabase,
   getMediaItems,
@@ -146,7 +147,12 @@ let usbPollInterval: NodeJS.Timeout | null = null
 
 // ---- API service factory ----
 
-export function createApiService(mediaDir: string, dataDir: string) {
+export function createApiService(
+  mediaDir: string,
+  dataDir: string,
+  wifiService?: WifiService,
+  onWifiConnected?: () => void,
+) {
   const thumbnailDir = path.join(mediaDir, '.thumbnails')
   fs.mkdirSync(thumbnailDir, { recursive: true })
 
@@ -409,6 +415,57 @@ export function createApiService(mediaDir: string, dataDir: string) {
     } catch (err: unknown) {
       res.status(500).json({ error: (err as Error).message })
     }
+  })
+
+  // ---- WiFi provisioning (only meaningful when Pi is in AP mode) ----
+
+  // Phone browser lands here after joining the leo-clock-setup hotspot
+  app.get('/setup', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.send(SETUP_PAGE_HTML)
+  })
+
+  // Redirect bare root to /setup when in AP mode so typing the IP is enough
+  app.get('/', (_req: Request, res: Response) => {
+    if (wifiService?.isApMode()) {
+      return res.redirect('/setup')
+    }
+    res.redirect('/portal')
+  })
+
+  app.get('/api/wifi/networks', async (_req: Request, res: Response) => {
+    if (!wifiService) return res.status(503).json({ error: 'WiFi service unavailable' })
+    try {
+      const networks = await wifiService.scanNetworks()
+      res.json(networks)
+    } catch (err: unknown) {
+      res.status(500).json({ error: (err as Error).message })
+    }
+  })
+
+  app.post('/api/wifi/connect', async (req: Request, res: Response) => {
+    if (!wifiService) return res.status(503).json({ error: 'WiFi service unavailable' })
+    const { ssid, password = '' } = req.body as { ssid?: string; password?: string }
+    if (!ssid) return res.status(400).json({ error: 'ssid is required' })
+
+    try {
+      await wifiService.connect(ssid, password)
+    } catch (err: unknown) {
+      return res.status(422).json({ error: (err as Error).message || 'Connection failed' })
+    }
+
+    // Connection succeeded — respond to phone, then clean up + reboot
+    res.json({ message: 'Connected. Rebooting…' })
+
+    setTimeout(async () => {
+      try {
+        await wifiService.teardownHotspot()
+        onWifiConnected?.()
+        await wifiService.reboot()
+      } catch (err) {
+        console.error('[WiFi] post-connect teardown error:', err)
+      }
+    }, 1500)
   })
 
   // ---- Start server ----

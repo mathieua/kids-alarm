@@ -5,6 +5,7 @@ import { Media } from './views/Media'
 import { Alarms } from './views/Alarms'
 import { Sync } from './views/Sync'
 import { DimmedClock } from './views/DimmedClock'
+import { WifiSetup } from './views/WifiSetup'
 import { useSwipe } from './hooks/useSwipe'
 import { useIdleTimer } from './hooks/useIdleTimer'
 import { useAlarm } from './hooks/useAlarm'
@@ -22,9 +23,18 @@ function App() {
   const [slideDirection, setSlideDirection] = useState<Direction>('left')
   const [viewKey, setViewKey] = useState(0)
   const [hasUsbDevice, setHasUsbDevice] = useState(false)
+  const [wifiApMode, setWifiApMode] = useState(false)
   const appRef = useRef<HTMLDivElement>(null)
   const { isIdle, wake } = useIdleTimer(IDLE_TIMEOUT)
   const { alarm, isFiring, snooze, dismiss } = useAlarm()
+
+  // Check WiFi AP mode on mount; listen for connected event (triggers reboot anyway)
+  useEffect(() => {
+    window.electronAPI.wifi.getStatus()
+      .then(s => setWifiApMode(s.apMode))
+      .catch(() => {})
+    return window.electronAPI.wifi.onConnected(() => setWifiApMode(false))
+  }, [])
 
   // Watch for USB device connect/disconnect
   useEffect(() => {
@@ -103,6 +113,10 @@ function App() {
     onSwipeLeft: navigateNext,
     onSwipeRight: navigatePrev,
   })
+
+  if (wifiApMode) {
+    return <WifiSetup />
+  }
 
   if (isIdle) {
     return <DimmedClock onWake={wake} />

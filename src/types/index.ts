@@ -46,6 +46,18 @@ export interface SyncSummary {
 
 export type SyncStatus = 'idle' | 'syncing' | 'complete' | 'error'
 
+export interface WifiNetwork {
+  ssid: string
+  security: string
+  signal: number
+  inUse: boolean
+}
+
+export interface WifiStatus {
+  apMode: boolean
+  hotspotIp: string | null
+}
+
 export interface Alarm {
   id: number
   time: string      // 'HH:MM'
@@ -57,6 +69,10 @@ export interface Alarm {
 
 export interface ElectronAPI {
   platform: string
+  wifi: {
+    getStatus: () => Promise<WifiStatus>
+    onConnected: (callback: () => void) => () => void
+  }
   alarm: {
     getAlarm: () => Promise<Alarm | null>
     setAlarm: (time: string, enabled: boolean, soundPath?: string | null) => Promise<Alarm>

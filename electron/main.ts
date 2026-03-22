@@ -3,6 +3,7 @@ import path from 'path'
 import { AudioService, Track } from './services/audio'
 import { AlarmService } from './services/alarm'
 import { createApiService } from './services/api'
+import { WifiService } from './services/wifi'
 import { getMediaItems } from './services/database'
 import fs from 'fs'
 
@@ -12,6 +13,7 @@ const isKiosk = !isDev && process.platform === 'linux'
 let mainWindow: BrowserWindow | null = null
 let audioService: AudioService
 let alarmService: AlarmService
+let wifiService: WifiService
 
 // Timers managed by main process when alarm fires
 let alarmVolumeRampTimer: NodeJS.Timeout | null = null
@@ -206,8 +208,16 @@ app.whenReady().then(() => {
     : path.join(__dirname, '../../data')
   fs.mkdirSync(dataDir, { recursive: true })
 
-  const apiService = createApiService(mediaDir, dataDir)
+  wifiService = new WifiService()
+
+  const apiService = createApiService(mediaDir, dataDir, wifiService, () => {
+    // Called by Express after successful WiFi connect — notify the renderer
+    mainWindow?.webContents.send('wifi:connected')
+  })
   apiService.start(3000)
+
+  // WiFi IPC handlers
+  ipcMain.handle('wifi:getStatus', () => wifiService.getStatus())
 
   // Forward sync/USB events to renderer
   apiService.sync.onEvent((event, payload) => {

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAlarm } from '../hooks/useAlarm'
+import { useAudio } from '../hooks/useAudio'
 
 export function Clock() {
   const [time, setTime] = useState(new Date())
   const { alarm } = useAlarm()
+  const { isPlaying, currentTrack, togglePlayPause } = useAudio()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -41,6 +43,14 @@ export function Clock() {
             const dh = h % 12 || 12
             return `${dh}:${String(m).padStart(2, '0')} ${period}`
           })()}
+        </div>
+      )}
+      {currentTrack && (
+        <div className="now-playing">
+          <button className="now-playing-btn" onClick={togglePlayPause} aria-label={isPlaying ? 'Pause' : 'Play'}>
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          <span className="now-playing-title">{currentTrack.title}</span>
         </div>
       )}
     </div>

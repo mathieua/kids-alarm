@@ -74,6 +74,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // WiFi provisioning
+  wifi: {
+    getStatus: () => ipcRenderer.invoke('wifi:getStatus'),
+    onConnected: (callback: () => void) => {
+      const listener = () => callback()
+      ipcRenderer.on('wifi:connected', listener)
+      return () => ipcRenderer.removeListener('wifi:connected', listener)
+    },
+  },
+
   // Sync controls
   sync: {
     getDevice: () => ipcRenderer.invoke('sync:getDevice'),

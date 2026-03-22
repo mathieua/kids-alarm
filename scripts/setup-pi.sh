@@ -194,7 +194,29 @@ else
     echo "~/.asoundrc already configured"
 fi
 
-# Step 15: Verify I2C
+# Step 15: Install WiFi provisioning service
+print_step "Installing WiFi provisioning service..."
+
+# Allow the pi user to run nmcli and reboot without a password.
+# nmcli is needed to connect to WiFi and tear down the setup hotspot;
+# reboot is needed after a successful setup-mode reconfiguration.
+SUDOERS_FILE="/etc/sudoers.d/alarm-clock"
+if ! sudo grep -q "nmcli" "$SUDOERS_FILE" 2>/dev/null; then
+    echo "pi ALL=(ALL) NOPASSWD: /usr/bin/nmcli, /sbin/reboot" | sudo tee "$SUDOERS_FILE" > /dev/null
+    sudo chmod 440 "$SUDOERS_FILE"
+    echo "Sudoers entry written to $SUDOERS_FILE"
+fi
+
+# Make the check script executable
+chmod +x ~/alarm-clock/scripts/wifi-check.sh
+
+# Install and enable the systemd service
+sudo cp ~/alarm-clock/scripts/leo-clock-wifi.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable leo-clock-wifi.service
+echo "leo-clock-wifi.service enabled."
+
+# Step 16: Verify I2C
 print_step "Verifying I2C configuration..."
 if sudo i2cdetect -y 1 > /dev/null 2>&1; then
     echo "I2C is working. Connected devices:"
