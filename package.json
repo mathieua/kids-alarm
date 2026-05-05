@@ -11,7 +11,7 @@
     "build:renderer": "vite build",
     "build:portal": "vite build --config vite.portal.config.ts",
     "build:electron": "tsc -p tsconfig.electron.json",
-    "start": "NODE_ENV=production electron .",
+    "start": "NODE_ENV=production electron --touch-events --disable-gpu-sandbox .",
     "preview": "vite preview",
     "postinstall": "electron-rebuild -f -w better-sqlite3 || true"
   },

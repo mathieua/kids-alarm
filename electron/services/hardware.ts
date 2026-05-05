@@ -92,11 +92,13 @@ export class HardwareService {
 
       rl.on('error', () => {})   // suppress readline re-emit of socket errors
 
+      // 'error' always precedes 'close' on a failed connect — destroy() here
+      // ensures the FD is released, and 'close' will fire next to schedule retry.
       client.on('error', () => {
-        rl.close()
-        setTimeout(attempt, 2000)
+        client.destroy()
       })
 
+      // Single reconnect point: fires after both error-then-close and normal close.
       client.on('close', () => {
         rl.close()
         setTimeout(attempt, 2000)
