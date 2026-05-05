@@ -14,6 +14,7 @@ export interface Track {
 
 export interface PlaybackState {
   isPlaying: boolean
+  isMuted: boolean
   currentTrack: Track | null
   position: number
   duration: number
@@ -26,6 +27,7 @@ export class AudioService extends EventEmitter {
   private player: ChildProcess | null = null
   private state: PlaybackState = {
     isPlaying: false,
+    isMuted: false,
     currentTrack: null,
     position: 0,
     duration: 0,
@@ -39,6 +41,8 @@ export class AudioService extends EventEmitter {
   constructor(mediaDir: string) {
     super()
     this.mediaDir = mediaDir
+    // Sync ALSA to the initial volume so encoder up/down are immediately effective
+    spawn('amixer', ['-c', 'USB', 'sset', 'PCM', `${this.state.volume}%`], { stdio: 'ignore' })
   }
 
   getState(): PlaybackState {
@@ -211,6 +215,20 @@ export class AudioService extends EventEmitter {
       })
     } catch (err) {
       console.error('Failed to set volume:', err)
+    }
+
+    this.emit('stateChange', this.getState())
+  }
+
+  async toggleMute(): Promise<void> {
+    this.state.isMuted = !this.state.isMuted
+
+    try {
+      spawn('amixer', ['-c', 'USB', 'sset', 'PCM', 'toggle'], {
+        stdio: 'ignore',
+      })
+    } catch (err) {
+      console.error('Failed to toggle mute:', err)
     }
 
     this.emit('stateChange', this.getState())

@@ -46,12 +46,19 @@ log "No WiFi after ${MAX_WAIT}s. Creating hotspot: $HOTSPOT_SSID"
 # Remove any leftover connection with the same name
 nmcli connection delete "$HOTSPOT_CON" 2>/dev/null || true
 
-# Create open (no-password) AP; NM assigns 10.42.0.1/24 with built-in DHCP
-nmcli device wifi hotspot \
+# Create open (no-password) AP; NM assigns 10.42.0.1/24 with built-in DHCP.
+# wifi-sec.key-mgmt none is required — without it nmcli generates a random password.
+nmcli connection add \
+    type wifi \
     ifname wlan0 \
-    ssid "$HOTSPOT_SSID" \
     con-name "$HOTSPOT_CON" \
-    band bg
+    ssid "$HOTSPOT_SSID" \
+    mode ap \
+    band bg \
+    ipv4.method shared \
+    wifi-sec.key-mgmt none
+
+nmcli connection up "$HOTSPOT_CON"
 
 # Signal setup mode to the Electron app
 touch "$FLAG_FILE"

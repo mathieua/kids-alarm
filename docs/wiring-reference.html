@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>leo-clock — Wiring Reference</title>
+<style>
+  @page { size: A4 portrait; margin: 16mm 18mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #111;
+    background: white;
+  }
+
+  /* ── page containers ── */
+  .sheet {
+    width: 100%;
+    min-height: 257mm; /* A4 minus margins */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-break { page-break-after: always; }
+
+  /* ── shared header ── */
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2.5px solid #111;
+    padding-bottom: 7px;
+    margin-bottom: 16px;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 3px; }
+  .sub { font-size: 11px; color: #555; }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1.5px solid #111;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+
+  /* ── colour legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 18px;
+    margin-bottom: 16px;
+    font-size: 11.5px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,.2);
+  }
+
+  /* ── page 1 layout: GPIO diagram + buttons side by side ── */
+  .p1-body {
+    display: flex;
+    gap: 22px;
+    flex: 1;
+  }
+
+  /* ── GPIO diagram ── */
+  .gpio-wrap { flex: 0 0 auto; }
+
+  .gpio {
+    font-family: 'Courier New', monospace;
+    font-size: 11.5px;
+    line-height: 1;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px 8px;
+    background: #fafafa;
+    display: inline-block;
+  }
+
+  .pin-row {
+    display: flex;
+    align-items: center;
+    margin: 2px 0;
+  }
+
+  .lbl-l { width: 110px; text-align: right; padding-right: 5px; font-size: 11px; }
+  .lbl-r { width: 110px; text-align: left;  padding-left: 5px;  font-size: 11px; }
+  .pn    { font-size: 10px; color: #888; width: 22px; text-align: center; }
+
+  .dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #999;
+    background: #ddd;
+    flex-shrink: 0;
+    margin: 0 1px;
+  }
+  .dot.pwr { background: #e74c3c; border-color: #c0392b; }
+  .dot.gnd { background: #2c3e50; border-color: #111; }
+  .dot.i2c { background: #8e44ad; border-color: #6c3483; }
+  .dot.enc { background: #2980b9; border-color: #1a6090; }
+  .dot.btn { background: #27ae60; border-color: #1e8449; }
+  .dot.led { background: #f39c12; border-color: #b7770d; }
+  .dot.nc  { background: #ecf0f1; border-color: #bdc3c7; }
+
+  /* ── right panel on page 1 ── */
+  .p1-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* ── tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  th {
+    background: #111;
+    color: #fff;
+    padding: 5px 8px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: middle;
+  }
+
+  tr:nth-child(even) td { background: #f7f7f7; }
+
+  .mono {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  /* ── note box ── */
+  .note {
+    border: 1px dashed #bbb;
+    border-radius: 5px;
+    padding: 8px 10px;
+    background: #fffdf0;
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .note strong { color: #c0392b; }
+  .note code {
+    background: #eee;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+  }
+
+  /* ── I2C sidebar ── */
+  .i2c-note {
+    border-left: 4px solid #8e44ad;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 10px;
+  }
+
+  /* ── annotation lines ── */
+  .ann-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+    flex: 1;
+  }
+
+  .ann-item { margin-bottom: 14px; }
+  .ann-label {
+    font-size: 10.5px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .ann-line {
+    border-bottom: 1px solid #bbb;
+    height: 22px;
+    margin-bottom: 6px;
+  }
+  .ann-lines-tall .ann-line { height: 26px; }
+
+  /* ── footer ── */
+  .footer {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+    font-size: 9.5px;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── page 2 layout ── */
+  .p2-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .p2-top { display: flex; gap: 22px; }
+  .p2-top > div { flex: 1; }
+
+  .big-notes {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .big-notes .ann-grid {
+    flex: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 1 ═══ -->
+<div class="sheet page-break">
+
+  <div class="sheet-header">
+    <div>
+      <h1>leo-clock — Wiring Reference</h1>
+      <div class="sub">Raspberry Pi 4 · DS3231 RTC · BH1750 · Rotary Encoder · 4 Buttons · Snooze LED</div>
+    </div>
+    <div class="sub" style="text-align:right">
+      Sheet 1 of 2 · Print &amp; annotate<br>
+      <span id="date1"></span>
+    </div>
+  </div>
+
+  <!-- legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="swatch" style="background:#e74c3c"></div>3.3 V / 5 V power</div>
+    <div class="legend-item"><div class="swatch" style="background:#2c3e50"></div>Ground (GND)</div>
+    <div class="legend-item"><div class="swatch" style="background:#8e44ad"></div>I²C — shared bus (DS3231 + BH1750)</div>
+    <div class="legend-item"><div class="swatch" style="background:#2980b9"></div>Rotary encoder</div>
+    <div class="legend-item"><div class="swatch" style="background:#27ae60"></div>Buttons</div>
+    <div class="legend-item"><div class="swatch" style="background:#f39c12"></div>Snooze LED output</div>
+    <div class="legend-item"><div class="swatch" style="background:#ecf0f1;border:1px solid #bdc3c7"></div>Not connected</div>
+  </div>
+
+  <div class="p1-body">
+
+    <!-- GPIO DIAGRAM -->
+    <div class="gpio-wrap">
+      <h2>40-pin Header</h2>
+      <div class="gpio">
+        <div class="pin-row"><span class="lbl-l">3.3 V</span>             <span class="dot pwr"></span><span class="pn">1</span><span class="pn">2</span><span class="dot pwr"></span><span class="lbl-r">5 V → DS3231 / BH1750</span></div>
+        <div class="pin-row"><span class="lbl-l">SDA → DS3231, BH1750</span><span class="dot i2c"></span><span class="pn">3</span><span class="pn">4</span><span class="dot pwr"></span><span class="lbl-r">5 V</span></div>
+        <div class="pin-row"><span class="lbl-l">SCL → DS3231, BH1750</span><span class="dot i2c"></span><span class="pn">5</span><span class="pn">6</span><span class="dot gnd"></span><span class="lbl-r">GND</span></div>
+        <div class="pin-row"><span class="lbl-l"></span>                   <span class="dot nc"></span> <span class="pn">7</span><span class="pn">8</span><span class="dot nc"></span> <span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">GND</span>               <span class="dot gnd"></span><span class="pn">9</span><span class="pn">10</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">Encoder CLK (GPIO 17)</span><span class="dot enc"></span><span class="pn">11</span><span class="pn">12</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">Encoder DT  (GPIO 27)</span><span class="dot enc"></span><span class="pn">13</span><span class="pn">14</span><span class="dot gnd"></span><span class="lbl-r">GND</span></div>
+        <div class="pin-row"><span class="lbl-l">Encoder SW  (GPIO 22)</span><span class="dot enc"></span><span class="pn">15</span><span class="pn">16</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">3.3 V → Encoder VCC</span> <span class="dot pwr"></span><span class="pn">17</span><span class="pn">18</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l"></span>                   <span class="dot nc"></span> <span class="pn">19</span><span class="pn">20</span><span class="dot gnd"></span><span class="lbl-r">GND</span></div>
+        <div class="pin-row"><span class="lbl-l"></span>                   <span class="dot nc"></span> <span class="pn">21</span><span class="pn">22</span><span class="dot nc"></span> <span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l"></span>                   <span class="dot nc"></span> <span class="pn">23</span><span class="pn">24</span><span class="dot nc"></span> <span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">GND</span>               <span class="dot gnd"></span><span class="pn">25</span><span class="pn">26</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l"></span>                   <span class="dot nc"></span> <span class="pn">27</span><span class="pn">28</span><span class="dot nc"></span> <span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">▶⏸ Play/Pause (GPIO 5)</span><span class="dot btn"></span><span class="pn">29</span><span class="pn">30</span><span class="dot gnd"></span><span class="lbl-r">GND ← buttons</span></div>
+        <div class="pin-row"><span class="lbl-l">⏭  Skip      (GPIO 6)</span><span class="dot btn"></span><span class="pn">31</span><span class="pn">32</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">⏮  Previous  (GPIO 13)</span><span class="dot btn"></span><span class="pn">33</span><span class="pn">34</span><span class="dot gnd"></span><span class="lbl-r">GND ← buttons</span></div>
+        <div class="pin-row"><span class="lbl-l">💤 Snooze btn (GPIO 19)</span><span class="dot btn"></span><span class="pn">35</span><span class="pn">36</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">💡 Snooze LED (GPIO 26)</span><span class="dot led"></span><span class="pn">37</span><span class="pn">38</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+        <div class="pin-row"><span class="lbl-l">GND</span>               <span class="dot gnd"></span><span class="pn">39</span><span class="pn">40</span><span class="dot nc"></span><span class="lbl-r"></span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="p1-right">
+
+      <!-- BUTTONS TABLE -->
+      <div>
+        <h2>Buttons</h2>
+        <table>
+          <tr><th>Function</th><th>BCM GPIO</th><th>Pi Pin</th><th>GND Pin</th><th>Done?</th></tr>
+          <tr><td>▶⏸ Play / Pause</td><td class="mono">GPIO 5</td> <td class="mono">29</td><td class="mono">30</td><td>☐</td></tr>
+          <tr><td>⏭  Skip</td>        <td class="mono">GPIO 6</td> <td class="mono">31</td><td class="mono">30 or 34</td><td>☐</td></tr>
+          <tr><td>⏮  Previous</td>    <td class="mono">GPIO 13</td><td class="mono">33</td><td class="mono">34</td><td>☐</td></tr>
+          <tr><td>💤 Snooze</td>      <td class="mono">GPIO 19</td><td class="mono">35</td><td class="mono">34 or 39</td><td>☐</td></tr>
+        </table>
+      </div>
+
+      <!-- BUTTON WIRING NOTE -->
+      <div class="note">
+        <strong>⚠ 4-pin tactile buttons — common mistake:</strong><br>
+        The two legs on the <em>same side</em> of the button body are <em>always</em> shorted
+        together internally. Wiring both wires to that side permanently connects the GPIO to GND
+        — the button appears "always pressed" and nothing works.<br><br>
+        <strong>Rule:</strong> the two wires must go to legs on <em>opposite sides</em> of the
+        button.<br><br>
+        <strong>Test with a multimeter (continuity mode):</strong><br>
+        · Beeps without pressing → same side → wrong<br>
+        · Only beeps when pressed → correct pair ✓
+      </div>
+
+      <!-- SNOOZE LED -->
+      <div>
+        <h2>Snooze LED — Pin 37 → 100 Ω → LED → GND</h2>
+        <table>
+          <tr><th>From</th><th>To</th></tr>
+          <tr><td>Pin 37 (GPIO 26, 3.3 V output)</td><td>100 Ω resistor leg 1</td></tr>
+          <tr><td>100 Ω resistor leg 2</td><td>LED anode (+, longer leg)</td></tr>
+          <tr><td>LED cathode (−, shorter leg)</td><td>GND — pin 39 is adjacent to pin 37</td></tr>
+        </table>
+        <p style="font-size:11.5px;margin-top:7px;color:#444">
+          R = (3.3 V − 2.2 V) ÷ 10 mA ≈ 110 Ω → use <strong>100 Ω or 120 Ω</strong>.
+          Flashes 1 Hz while alarm fires · off on snooze / dismiss.
+        </p>
+      </div>
+
+    </div><!-- /p1-right -->
+  </div><!-- /p1-body -->
+
+  <div class="footer">
+    <span>leo-clock · Wiring Reference · Sheet 1 of 2 — GPIO Header &amp; Buttons</span>
+    <span id="date1b"></span>
+  </div>
+
+</div><!-- /sheet page 1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 2 ═══ -->
+<div class="sheet">
+
+  <div class="sheet-header">
+    <div>
+      <h1>leo-clock — Wiring Reference</h1>
+      <div class="sub">Rotary Encoder · I²C Bus (DS3231 + BH1750) · Notes</div>
+    </div>
+    <div class="sub" style="text-align:right">
+      Sheet 2 of 2 · Print &amp; annotate<br>
+      <span id="date2"></span>
+    </div>
+  </div>
+
+  <div class="p2-body">
+
+    <!-- TOP ROW: ENCODER + I2C -->
+    <div class="p2-top">
+
+      <!-- ROTARY ENCODER -->
+      <div>
+        <h2>Rotary Encoder</h2>
+        <table>
+          <tr><th>Encoder pin</th><th>Function</th><th>BCM GPIO</th><th>Pi Pin</th><th>Done?</th></tr>
+          <tr><td>VCC / +</td><td>Power (3.3 V)</td><td class="mono">—</td>       <td class="mono">17</td><td>☐</td></tr>
+          <tr><td>GND</td>    <td>Ground</td>      <td class="mono">—</td>       <td class="mono">any GND</td><td>☐</td></tr>
+          <tr><td>CLK</td>    <td>Rotation signal</td><td class="mono">GPIO 17</td><td class="mono">11</td><td>☐</td></tr>
+          <tr><td>DT</td>     <td>Direction</td>   <td class="mono">GPIO 27</td><td class="mono">13</td><td>☐</td></tr>
+          <tr><td>SW</td>     <td>Push = mute toggle</td><td class="mono">GPIO 22</td><td class="mono">15</td><td>☐</td></tr>
+        </table>
+        <div class="note" style="margin-top:10px">
+          Most KY-040 encoders run at 3.3 V and connect directly to Pi GPIO.
+          If your module has a separate <code>+</code> and <code>GND</code> on the board,
+          use Pi pin 17 (3.3 V) and any GND pin.
+          CLK/DT/SW go directly to the GPIO pins — no resistors needed.
+        </div>
+      </div>
+
+      <!-- I2C BUS -->
+      <div>
+        <h2>I²C Bus — DS3231 RTC &amp; BH1750 Light Sensor</h2>
+        <div class="i2c-note">
+          Both chips share the <strong>same two wires</strong> (SDA + SCL) — wire them in
+          parallel. The Pi addresses each by its unique address:
+          DS3231 = <strong>0x68</strong>, BH1750 = <strong>0x23</strong>.<br><br>
+          Do <strong>not</strong> add external pull-up resistors —
+          GPIO 2 &amp; 3 have hardware pull-ups built into the Pi 4.
+        </div>
+        <table>
+          <tr><th>Signal</th><th>Pi Pin</th><th>→ DS3231</th><th>→ BH1750</th></tr>
+          <tr><td>5 V</td><td class="mono">2 or 4</td><td>VCC</td><td>VCC</td></tr>
+          <tr><td>GND</td><td class="mono">any GND</td><td>GND</td><td>GND</td></tr>
+          <tr><td>SDA</td><td class="mono">3</td><td>SDA</td><td>SDA</td></tr>
+          <tr><td>SCL</td><td class="mono">5</td><td>SCL</td><td>SCL</td></tr>
+        </table>
+        <div class="note" style="margin-top:10px">
+          After wiring, verify both devices appear:<br>
+          <code>i2cdetect -y 1</code><br>
+          Expected: <strong>23</strong> (BH1750) and <strong>68</strong> (DS3231)
+          in the address grid. If a device is missing, check its VCC and GND first.
+        </div>
+      </div>
+
+    </div><!-- /p2-top -->
+
+    <!-- NOTES AREA -->
+    <div class="big-notes">
+      <h2>Notes &amp; Observations</h2>
+      <div class="ann-grid">
+
+        <div>
+          <div class="ann-item">
+            <div class="ann-label">Encoder model &amp; VCC voltage confirmed</div>
+            <div class="ann-line"></div>
+          </div>
+          <div class="ann-item">
+            <div class="ann-label">DS3231 battery type (CR2032)</div>
+            <div class="ann-line"></div>
+          </div>
+          <div class="ann-item">
+            <div class="ann-label">Jabra USB ALSA card no. (aplay -l)</div>
+            <div class="ann-line"></div>
+          </div>
+          <div class="ann-item">
+            <div class="ann-label">i2cdetect result (0x23 / 0x68 visible?)</div>
+            <div class="ann-line"></div>
+          </div>
+          <div class="ann-item">
+            <div class="ann-label">Snooze LED resistor value used</div>
+            <div class="ann-line"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="ann-item">
+            <div class="ann-label">Notes</div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+            <div class="ann-line"></div>
+          </div>
+        </div>
+
+      </div><!-- /ann-grid -->
+    </div><!-- /big-notes -->
+
+  </div><!-- /p2-body -->
+
+  <div class="footer">
+    <span>leo-clock · Wiring Reference · Sheet 2 of 2 — Encoder, I²C &amp; Notes</span>
+    <span id="date2b"></span>
+  </div>
+
+</div><!-- /sheet page 2 -->
+
+<script>
+  const d = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+  ['date1','date1b','date2','date2b'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = d;
+  });
+</script>
+</body>
+</html>

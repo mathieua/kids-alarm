@@ -68,9 +68,10 @@ sudo apt install -y \
     python3-pip \
     ffmpeg
 
-# Step 5: Install I2C tools (for RTC and light sensor)
-print_step "Installing I2C tools..."
-sudo apt install -y i2c-tools
+# Step 5: Install I2C tools and hardware driver dependencies
+print_step "Installing I2C tools and hardware dependencies..."
+sudo apt install -y i2c-tools python3-smbus python3-lgpio
+sudo pip3 install smbus2 adafruit-circuitpython-bh1750 --break-system-packages
 
 # Step 6: Install Node.js 20 LTS
 print_step "Installing Node.js 20 LTS..."

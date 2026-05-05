@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import path from 'path'
 import { AudioService, Track } from './services/audio'
 import { AlarmService } from './services/alarm'
+import { HardwareService } from './services/hardware'
 import { createApiService } from './services/api'
 import { WifiService } from './services/wifi'
 import { getMediaItems } from './services/database'
@@ -14,6 +15,7 @@ let mainWindow: BrowserWindow | null = null
 let audioService: AudioService
 let alarmService: AlarmService
 let wifiService: WifiService
+let hardwareService: HardwareService
 
 // Timers managed by main process when alarm fires
 let alarmVolumeRampTimer: NodeJS.Timeout | null = null
@@ -233,6 +235,13 @@ app.whenReady().then(() => {
 
   setupAudioService()
   setupAlarmService()
+
+  // Hardware integration: only active in production (Pi).
+  // In dev the socket connections will silently retry and the sysfs/GPIO
+  // paths will not exist — all failures are handled gracefully.
+  hardwareService = new HardwareService(audioService, alarmService)
+  hardwareService.start()
+
   setupIpcHandlers(mediaDir)
   createWindow()
 
@@ -244,6 +253,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  hardwareService?.stop()
   alarmService?.stop()
   if (process.platform !== 'darwin') {
     app.quit()

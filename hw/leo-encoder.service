@@ -1,0 +1,15 @@
+[Unit]
+Description=leo-clock rotary encoder daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/leo-clock/hw/encoder.py
+Restart=always
+RestartSec=2
+User=pi
+WorkingDirectory=/tmp
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
