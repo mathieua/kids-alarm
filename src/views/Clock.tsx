@@ -1,91 +1,141 @@
 import { useState, useEffect } from 'react'
-import { useAlarm } from '../hooks/useAlarm'
-import { useAudio } from '../hooks/useAudio'
+import { Palette, Lang, Route, t, DATE_LABELS, CORNER_RADIUS } from '../App'
+import { Alarm, Track } from '../types'
+import { CircleBtn, IconAlarm, IconMusic, IconPlay, IconPause, IconSettings } from '../components/Icons'
 
 interface ClockProps {
-  onNavigate?: (view: string) => void
+  palette: Palette
+  lang: Lang
+  alarm: Alarm | null
+  isPlaying: boolean
+  currentTrack: Track | null
+  onTogglePlay: () => void
+  onNavigate: (r: Route) => void
 }
 
-export function Clock({ onNavigate }: ClockProps) {
-  const [time, setTime] = useState(new Date())
-  const { alarm } = useAlarm()
-  const { isPlaying, togglePlayPause } = useAudio()
+export function Clock({ palette, lang, alarm, isPlaying, currentTrack, onTogglePlay, onNavigate }: ClockProps) {
+  const [now, setNow] = useState(new Date())
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date())
-    }, 1000)
+    const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const hours = time.getHours()
-  const minutes = time.getMinutes()
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  const labels = DATE_LABELS[lang] ?? DATE_LABELS.en
+  const dateStr = labels.fmt(now, labels.days, labels.months)
+  const r = CORNER_RADIUS
 
-  const dateStr = time.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
+  const cardBase: React.CSSProperties = {
+    flex: 1, background: 'rgba(255,255,255,0.22)',
+    backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+    borderRadius: r, padding: 18, display: 'flex', alignItems: 'center', gap: 14,
+    cursor: 'pointer', border: '1px solid rgba(255,255,255,0.18)',
+    transition: 'background 0.15s ease',
+  }
+  const pill = (bg: string): React.CSSProperties => ({
+    width: 60, height: 60, borderRadius: '50%', background: bg,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
   })
 
-  const alarmTime = alarm?.time || '07:00'
-  const [alarmH, alarmM] = alarmTime.split(':')
-
   return (
-    <div className="clock-view-new">
-      <div className="clock-time-container">
-        <div className="clock-time">
-          {hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')}
+    <div style={{
+      width: 800, height: 480, background: palette.clock,
+      display: 'flex', flexDirection: 'column', padding: 24, gap: 24,
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Settings gear — top right */}
+      <button onClick={() => onNavigate('settings')} style={{
+        position: 'absolute', top: 18, right: 18,
+        width: 48, height: 48, borderRadius: '50%',
+        background: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', padding: 0, zIndex: 2, transition: 'transform 0.12s ease',
+      }}
+        onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
+        onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+      >
+        <IconSettings size={24} />
+      </button>
+
+      {/* Time + date */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 4,
+      }}>
+        <div style={{
+          fontSize: 132, fontWeight: 800, color: '#fff',
+          letterSpacing: '-0.04em', lineHeight: 0.95,
+          textShadow: '0 6px 24px rgba(0,0,0,0.18)', fontVariantNumeric: 'tabular-nums',
+        }}>{timeStr}</div>
+        <div style={{ fontSize: 26, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginTop: 8 }}>
+          {dateStr}
         </div>
-        <div className="clock-date">{dateStr}</div>
       </div>
 
-      <div className="clock-cards">
-        <button className="clock-card" onClick={() => onNavigate?.('alarms')}>
-          <div className="clock-card-icon clock-card-icon--alarm">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 22C14.1217 22 16.1566 21.1571 17.6569 19.6569C19.1571 18.1566 20 16.1217 20 14C20 11.8783 19.1571 9.84344 17.6569 8.34315C16.1566 6.84285 14.1217 6 12 6C9.87827 6 7.84344 6.84285 6.34315 8.34315C4.84285 9.84344 4 11.8783 4 14C4 16.1217 4.84285 18.1566 6.34315 19.6569C7.84344 21.1571 9.87827 22 12 22Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 10V14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M4 4L7 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M20 4L17 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M18.5 18.5L20 20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M5.5 18.5L4 20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div className="clock-card-content">
-            <span className="clock-card-label">Next Alarm</span>
-            <span className="clock-card-value">{alarmH}:{alarmM}</span>
-          </div>
-        </button>
-
-        <button className="clock-card" onClick={() => onNavigate?.('media')}>
-          <div className="clock-card-icon clock-card-icon--music">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 18V5L21 3V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="6" cy="18" r="3" stroke="white" strokeWidth="2"/>
-              <circle cx="18" cy="16" r="3" stroke="white" strokeWidth="2"/>
-            </svg>
-          </div>
-          <div className="clock-card-content">
-            <span className="clock-card-value">Music</span>
-          </div>
-          <div
-            className="clock-play-btn"
-            onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
-            role="button"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="6" y="4" width="4" height="16" rx="1" fill="#c27aff"/>
-                <rect x="14" y="4" width="4" height="16" rx="1" fill="#c27aff"/>
-              </svg>
+      {/* Bottom cards */}
+      <div style={{ display: 'flex', gap: 18 }}>
+        {/* Alarm card */}
+        <div onClick={() => onNavigate('alarms')} style={cardBase}
+          onMouseDown={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.30)')}
+          onMouseUp={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.22)')}
+          onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.22)')}
+        >
+          <div style={pill('#facc15')}><IconAlarm size={30} stroke="#fff" /></div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {alarm?.enabled ? (
+              <>
+                <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {t(lang, 'nextAlarm')}
+                </div>
+                <div style={{ color: '#fff', fontSize: 32, fontWeight: 800, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>
+                  {alarm.time}
+                </div>
+              </>
             ) : (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z" fill="#c27aff"/>
-              </svg>
+              <>
+                <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{t(lang, 'setAlarm')}</div>
+                <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13 }}>{t(lang, 'tapAdd')}</div>
+              </>
             )}
           </div>
-        </button>
+        </div>
+
+        {/* Music card */}
+        <div onClick={() => onNavigate('playlists')} style={cardBase}
+          onMouseDown={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.30)')}
+          onMouseUp={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.22)')}
+          onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.22)')}
+        >
+          <div style={pill('#22c55e')}><IconMusic size={28} stroke="#fff" /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {isPlaying && currentTrack ? (
+              <>
+                <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {t(lang, 'nowPlaying')}
+                </div>
+                <div style={{ color: '#fff', fontSize: 19, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentTrack.title}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>Music</div>
+                <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13 }}>{t(lang, 'tapBrowse')}</div>
+              </>
+            )}
+          </div>
+          <CircleBtn size={56} bg="#fff" color={palette.accentPlay} shadow="0 6px 18px rgba(0,0,0,0.18)"
+            onClick={e => { e.stopPropagation(); onTogglePlay() }}
+          >
+            {isPlaying
+              ? <IconPause size={26} />
+              : <div style={{ transform: 'translateX(2px)' }}><IconPlay size={26} /></div>
+            }
+          </CircleBtn>
+        </div>
       </div>
     </div>
   )

@@ -1,34 +1,170 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Navigation } from './components/Navigation'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Clock } from './views/Clock'
-import { Media } from './views/Media'
 import { Alarms } from './views/Alarms'
-import { Sync } from './views/Sync'
+import { Playlists } from './views/Playlists'
+import { MusicPlayer } from './views/MusicPlayer'
+import { Settings } from './views/Settings'
 import { DimmedClock } from './views/DimmedClock'
 import { WifiSetup } from './views/WifiSetup'
-import { useSwipe } from './hooks/useSwipe'
-import { useIdleTimer } from './hooks/useIdleTimer'
 import { useAlarm } from './hooks/useAlarm'
+import { useAudio } from './hooks/useAudio'
+import './styles/global.css'
 import './types'
 
-const BASE_VIEWS = ['clock', 'media', 'alarms'] as const
-type BaseView = typeof BASE_VIEWS[number]
-type View = BaseView | 'sync'
-type Direction = 'left' | 'right'
+// ── Design tokens ──────────────────────────────────────────────────────────
+export const PALETTES = {
+  Sunset: {
+    clock:  'linear-gradient(135deg, #c084fc 0%, #f472b6 50%, #60a5fa 100%)',
+    alarms: 'linear-gradient(135deg, #fb923c 0%, #f87171 50%, #f472b6 100%)',
+    music:  'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
+    accentPlay: '#9333ea',
+  },
+  Mint: {
+    clock:  'linear-gradient(135deg, #5eead4 0%, #67e8f9 50%, #a5b4fc 100%)',
+    alarms: 'linear-gradient(135deg, #fde047 0%, #fb923c 50%, #f472b6 100%)',
+    music:  'linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #6366f1 100%)',
+    accentPlay: '#0d9488',
+  },
+  Candy: {
+    clock:  'linear-gradient(135deg, #fb7185 0%, #f0abfc 50%, #fde047 100%)',
+    alarms: 'linear-gradient(135deg, #fb7185 0%, #fbbf24 50%, #fde047 100%)',
+    music:  'linear-gradient(135deg, #ec4899 0%, #f43f5e 50%, #fb923c 100%)',
+    accentPlay: '#be185d',
+  },
+  Ocean: {
+    clock:  'linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #1e3a8a 100%)',
+    alarms: 'linear-gradient(135deg, #06b6d4 0%, #0ea5e9 50%, #6366f1 100%)',
+    music:  'linear-gradient(135deg, #1e3a8a 0%, #6366f1 50%, #06b6d4 100%)',
+    accentPlay: '#1d4ed8',
+  },
+}
+export type PaletteName = keyof typeof PALETTES
+export type Palette = typeof PALETTES[PaletteName]
 
-const IDLE_TIMEOUT = 30 * 1000
+export const SONG_GRADIENTS = [
+  'linear-gradient(135deg, #fbbf24, #fb923c)',
+  'linear-gradient(135deg, #4ade80, #2dd4bf)',
+  'linear-gradient(135deg, #60a5fa, #a78bfa)',
+  'linear-gradient(135deg, #f472b6, #f87171)',
+  'linear-gradient(135deg, #818cf8, #a855f7)',
+  'linear-gradient(135deg, #22d3ee, #60a5fa)',
+]
 
+export const CORNER_RADIUS = 28
+
+// ── i18n ───────────────────────────────────────────────────────────────────
+export const STRINGS = {
+  en: {
+    alarms: 'Alarms', music: 'Music Player', playlists: 'Playlists',
+    settings: 'Settings', nextAlarm: 'Next Alarm', setAlarm: 'Set Alarm',
+    tapAdd: 'Tap to add', nowPlaying: 'Now Playing', tapBrowse: 'Tap to browse',
+    save: 'Save', cancel: 'Cancel', noAlarms: 'No alarms yet',
+    addFirst: 'Tap the + button to add your first alarm',
+    songs: 'songs', language: 'Language', theme: 'Theme', autoDim: 'Auto dim',
+    seconds: 's', never: 'Never', tapToWake: 'Tap anywhere to wake',
+    myMusic: 'My Music', allTracks: 'Your tracks',
+  },
+  fr: {
+    alarms: 'Alarmes', music: 'Lecteur', playlists: 'Playlists',
+    settings: 'Réglages', nextAlarm: 'Prochaine alarme', setAlarm: 'Régler une alarme',
+    tapAdd: 'Touchez pour ajouter', nowPlaying: 'En lecture', tapBrowse: 'Touchez pour parcourir',
+    save: 'Enregistrer', cancel: 'Annuler', noAlarms: 'Aucune alarme',
+    addFirst: 'Touchez le bouton + pour ajouter une alarme',
+    songs: 'titres', language: 'Langue', theme: 'Thème', autoDim: 'Mise en veille',
+    seconds: 's', never: 'Jamais', tapToWake: 'Touchez pour réveiller',
+    myMusic: 'Ma Musique', allTracks: 'Vos pistes',
+  },
+} as const
+export type Lang = keyof typeof STRINGS
+export const t = (lang: Lang, key: keyof typeof STRINGS['en']): string =>
+  (STRINGS[lang] ?? STRINGS.en)[key] ?? key
+
+export const DATE_LABELS = {
+  en: {
+    days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    fmt: (d: Date, days: string[], months: string[]) =>
+      `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`,
+  },
+  fr: {
+    days: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+    months: ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'],
+    fmt: (d: Date, days: string[], months: string[]) =>
+      `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,
+  },
+}
+
+export const DAYS_EN = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const
+export const DAYS_FR = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] as const
+export type DayCode = typeof DAYS_EN[number]
+
+// ── Settings ───────────────────────────────────────────────────────────────
+export interface AppSettings {
+  lang: Lang
+  theme: PaletteName
+  dimSeconds: number
+}
+
+const SETTINGS_KEY = 'kmp_settings'
+const loadSettings = (): AppSettings => {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    return raw ? { lang: 'en', theme: 'Sunset', dimSeconds: 30, ...JSON.parse(raw) } : { lang: 'en', theme: 'Sunset', dimSeconds: 30 }
+  } catch { return { lang: 'en', theme: 'Sunset', dimSeconds: 30 } }
+}
+const saveSettings = (s: AppSettings) => localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
+
+// ── Stage (responsive scaling) ─────────────────────────────────────────────
+function Stage({ children }: { children: React.ReactNode }) {
+  const [scale, setScale] = useState(1)
+  useEffect(() => {
+    const recalc = () => {
+      const sx = window.innerWidth / 800
+      const sy = window.innerHeight / 480
+      setScale(Math.min(sx, sy))
+    }
+    recalc()
+    window.addEventListener('resize', recalc)
+    return () => window.removeEventListener('resize', recalc)
+  }, [])
+  return (
+    <div style={{
+      width: '100vw', height: '100vh',
+      background: '#000',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
+    }}>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ── Routes ─────────────────────────────────────────────────────────────────
+export type Route = 'clock' | 'alarms' | 'playlists' | 'music' | 'settings'
+
+// ── App ────────────────────────────────────────────────────────────────────
 function App() {
-  const [activeView, setActiveView] = useState<View>('clock')
-  const [slideDirection, setSlideDirection] = useState<Direction>('left')
-  const [viewKey, setViewKey] = useState(0)
-  const [hasUsbDevice, setHasUsbDevice] = useState(false)
+  const [route, setRoute] = useState<Route>('clock')
+  const [settings, setSettingsState] = useState<AppSettings>(loadSettings)
+  const [dimmed, setDimmed] = useState(false)
   const [wifiApMode, setWifiApMode] = useState(false)
-  const appRef = useRef<HTMLDivElement>(null)
-  const { isIdle, wake } = useIdleTimer(IDLE_TIMEOUT)
-  const { alarm, isFiring, snooze, dismiss } = useAlarm()
+  const [hasUsbDevice, setHasUsbDevice] = useState(false)
+  const dimTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Check WiFi AP mode on mount; listen for connected event (triggers reboot anyway)
+  const { alarm, isFiring, snooze, dismiss } = useAlarm()
+  const { isPlaying, currentTrack, togglePlayPause } = useAudio()
+
+  const palette = PALETTES[settings.theme] ?? PALETTES.Sunset
+  const lang = settings.lang
+
+  const updateSettings = useCallback((s: AppSettings) => {
+    setSettingsState(s)
+    saveSettings(s)
+  }, [])
+
+  // WiFi AP mode
   useEffect(() => {
     window.electronAPI.wifi.getStatus()
       .then(s => setWifiApMode(s.apMode))
@@ -36,7 +172,7 @@ function App() {
     return window.electronAPI.wifi.onConnected(() => setWifiApMode(false))
   }, [])
 
-  // Watch for USB device connect/disconnect
+  // USB sync device
   useEffect(() => {
     window.electronAPI.sync.getDevice().then(dev => setHasUsbDevice(!!dev)).catch(() => {})
     return window.electronAPI.sync.onEvent((event) => {
@@ -45,123 +181,107 @@ function App() {
     })
   }, [])
 
-  const views: View[] = useMemo(
-    () => hasUsbDevice ? [...BASE_VIEWS, 'sync'] : [...BASE_VIEWS],
-    [hasUsbDevice]
-  )
-
-  // Auto-navigate to sync on device connect; back to clock on disconnect
+  // Navigate to sync on USB connect
   useEffect(() => {
-    if (hasUsbDevice) {
-      navigateTo('sync', 'left')
-    } else if (activeView === 'sync') {
-      navigateTo('clock', 'right')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (hasUsbDevice) setRoute('clock') // sync view handled in Clock via overlay
   }, [hasUsbDevice])
 
-  const navigateTo = useCallback((newView: View, direction: Direction) => {
-    setActiveView(prev => {
-      if (newView !== prev) {
-        setSlideDirection(direction)
-        setViewKey(k => k + 1)
-        return newView
-      }
-      return prev
-    })
+  // Auto-dim idle timer
+  useEffect(() => {
+    const { dimSeconds } = settings
+    if (!dimSeconds) return
+
+    const reset = () => {
+      if (dimTimerRef.current) clearTimeout(dimTimerRef.current)
+      if (dimmed) return
+      dimTimerRef.current = setTimeout(() => setDimmed(true), dimSeconds * 1000)
+    }
+    reset()
+    const events = ['mousedown', 'mousemove', 'touchstart', 'keydown'] as const
+    events.forEach(e => window.addEventListener(e, reset))
+    return () => {
+      if (dimTimerRef.current) clearTimeout(dimTimerRef.current)
+      events.forEach(e => window.removeEventListener(e, reset))
+    }
+  }, [settings.dimSeconds, dimmed, route])
+
+  const wake = useCallback(() => setDimmed(false), [])
+
+  const navigate = useCallback((r: Route) => {
+    setRoute(r)
+    setDimmed(false)
   }, [])
 
-  const navigateNext = useCallback(() => {
-    setActiveView(prev => {
-      const currentIndex = views.indexOf(prev)
-      if (currentIndex < views.length - 1) {
-        setSlideDirection('left')
-        setViewKey(k => k + 1)
-        return views[currentIndex + 1]
-      }
-      return prev
-    })
-  }, [views])
-
-  const navigatePrev = useCallback(() => {
-    setActiveView(prev => {
-      const currentIndex = views.indexOf(prev)
-      if (currentIndex > 0) {
-        setSlideDirection('right')
-        setViewKey(k => k + 1)
-        return views[currentIndex - 1]
-      }
-      return prev
-    })
-  }, [views])
-
-  const handleViewChange = useCallback((view: string) => {
-    setActiveView(prev => {
-      const currentIndex = views.indexOf(prev as View)
-      const newIndex = views.indexOf(view as View)
-      const direction = newIndex > currentIndex ? 'left' : 'right'
-      if (view !== prev) {
-        setSlideDirection(direction)
-        setViewKey(k => k + 1)
-        return view as View
-      }
-      return prev
-    })
-  }, [views])
-
-  useSwipe(appRef, {
-    onSwipeLeft: navigateNext,
-    onSwipeRight: navigatePrev,
-  })
-
   if (wifiApMode) {
-    return <WifiSetup />
+    return <Stage><WifiSetup /></Stage>
   }
-
-  if (isIdle) {
-    return <DimmedClock onWake={wake} />
-  }
-
-  const renderView = () => {
-    const className = `view-wrapper slide-from-${slideDirection}`
-    switch (activeView) {
-      case 'clock':   return <div key={viewKey} className={className}><Clock onNavigate={handleViewChange} /></div>
-      case 'media':   return <div key={viewKey} className={className}><Media onNavigate={handleViewChange} /></div>
-      case 'alarms':  return <div key={viewKey} className={className}><Alarms /></div>
-      case 'sync':    return <div key={viewKey} className={className}><Sync /></div>
-      default:        return <div key={viewKey} className={className}><Clock onNavigate={handleViewChange} /></div>
-    }
-  }
-
-  const navViews = [
-    { id: 'clock', label: 'Clock' },
-    { id: 'media', label: 'Media' },
-    { id: 'alarms', label: 'Alarms' },
-    ...(hasUsbDevice ? [{ id: 'sync', label: 'Sync' }] : []),
-  ]
-
-  const showNavigation = activeView !== 'clock' && activeView !== 'media'
 
   return (
-    <div className={`app ${(activeView === 'clock' || activeView === 'media') ? 'app--fullscreen' : ''}`} ref={appRef}>
-      <main className={`main-content ${(activeView === 'clock' || activeView === 'media') ? 'main-content--fullscreen' : ''}`}>
-        {renderView()}
-      </main>
-      {showNavigation && (
-        <Navigation views={navViews} activeView={activeView} onViewChange={handleViewChange} />
+    <Stage>
+      {dimmed ? (
+        <DimmedClock
+          alarm={alarm}
+          isPlaying={isPlaying}
+          currentTrack={currentTrack}
+          lang={lang}
+          onWake={wake}
+        />
+      ) : (
+        <>
+          {route === 'clock' && (
+            <Clock
+              palette={palette}
+              lang={lang}
+              alarm={alarm}
+              isPlaying={isPlaying}
+              currentTrack={currentTrack}
+              onTogglePlay={togglePlayPause}
+              onNavigate={navigate}
+            />
+          )}
+          {route === 'alarms' && (
+            <Alarms
+              palette={palette}
+              lang={lang}
+              onNavigate={navigate}
+            />
+          )}
+          {route === 'playlists' && (
+            <Playlists
+              palette={palette}
+              lang={lang}
+              onNavigate={navigate}
+            />
+          )}
+          {route === 'music' && (
+            <MusicPlayer
+              palette={palette}
+              lang={lang}
+              onNavigate={navigate}
+            />
+          )}
+          {route === 'settings' && (
+            <Settings
+              palette={palette}
+              lang={lang}
+              settings={settings}
+              onSettings={updateSettings}
+              onNavigate={navigate}
+            />
+          )}
+        </>
       )}
 
+      {/* Alarm fired overlay */}
       {isFiring && (
         <div className="alarm-overlay">
           <div className="alarm-overlay-time">
             {alarm ? (() => {
               const [h, m] = alarm.time.split(':').map(Number)
-              const period = h >= 12 ? 'PM' : 'AM'
-              const dh = h % 12 || 12
-              return `${dh}:${String(m).padStart(2, '0')} ${period}`
+              return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
             })() : ''}
           </div>
-          <div className="alarm-overlay-label">Wake Up!</div>
+          <div className="alarm-overlay-label">Wake Up! ☀️</div>
           <div className="alarm-overlay-actions">
             <button className="alarm-overlay-btn alarm-overlay-btn--snooze" onClick={snooze}>
               <span>Snooze</span>
@@ -173,7 +293,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </Stage>
   )
 }
 
